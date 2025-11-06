@@ -123,7 +123,7 @@
             // btnChangeImage
             // 
             this.btnChangeImage.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnChangeImage.Location = new System.Drawing.Point(272, 312);
+            this.btnChangeImage.Location = new System.Drawing.Point(25, 128);
             this.btnChangeImage.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.btnChangeImage.Name = "btnChangeImage";
             this.btnChangeImage.Size = new System.Drawing.Size(110, 24);
@@ -160,10 +160,10 @@
             // 
             // btnSave
             // 
-            this.btnSave.Location = new System.Drawing.Point(272, 272);
+            this.btnSave.Location = new System.Drawing.Point(296, 312);
             this.btnSave.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.btnSave.Name = "btnSave";
-            this.btnSave.Size = new System.Drawing.Size(110, 28);
+            this.btnSave.Size = new System.Drawing.Size(88, 24);
             this.btnSave.TabIndex = 14;
             this.btnSave.Text = "저장";
             this.btnSave.UseVisualStyleBackColor = true;
@@ -172,7 +172,7 @@
             // labelPostalCode
             // 
             this.labelPostalCode.AutoSize = true;
-            this.labelPostalCode.Location = new System.Drawing.Point(16, 132);
+            this.labelPostalCode.Location = new System.Drawing.Point(12, 171);
             this.labelPostalCode.Name = "labelPostalCode";
             this.labelPostalCode.Size = new System.Drawing.Size(67, 12);
             this.labelPostalCode.TabIndex = 15;

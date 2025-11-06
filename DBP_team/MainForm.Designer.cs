@@ -28,7 +28,12 @@
         /// </summary>
         private void InitializeComponent()
         {
+            this.btnOpenLogin = new System.Windows.Forms.Button();
             this.treeViewUser = new System.Windows.Forms.TreeView();
+            this.listViewRecent = new System.Windows.Forms.ListView();
+            this.colName = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.colLastMsg = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.colTime = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.labelCompany = new System.Windows.Forms.Label();
             this.labelName = new System.Windows.Forms.Label();
             this.btnSelfChat = new System.Windows.Forms.Button();
@@ -37,10 +42,41 @@
             // 
             // treeViewUser
             // 
-            this.treeViewUser.Location = new System.Drawing.Point(34, 115);
+            this.treeViewUser.Location = new System.Drawing.Point(34, 301);
             this.treeViewUser.Name = "treeViewUser";
-            this.treeViewUser.Size = new System.Drawing.Size(308, 443);
+            this.treeViewUser.Size = new System.Drawing.Size(394, 253);
             this.treeViewUser.TabIndex = 0;
+            // 
+            // listViewRecent
+            // 
+            this.listViewRecent.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
+            this.colName,
+            this.colLastMsg,
+            this.colTime});
+            this.listViewRecent.FullRowSelect = true;
+            this.listViewRecent.HideSelection = false;
+            this.listViewRecent.Location = new System.Drawing.Point(34, 115);
+            this.listViewRecent.Name = "listViewRecent";
+            this.listViewRecent.Size = new System.Drawing.Size(394, 180);
+            this.listViewRecent.TabIndex = 3;
+            this.listViewRecent.UseCompatibleStateImageBehavior = false;
+            this.listViewRecent.View = System.Windows.Forms.View.Details;
+            this.listViewRecent.DoubleClick += new System.EventHandler(this.listViewRecent_DoubleClick);
+            // 
+            // colName
+            // 
+            this.colName.Text = "이름";
+            this.colName.Width = 120;
+            // 
+            // colLastMsg
+            // 
+            this.colLastMsg.Text = "최근메시지";
+            this.colLastMsg.Width = 140;
+            // 
+            // colTime
+            // 
+            this.colTime.Text = "시간";
+            this.colTime.Width = 120;
             // 
             // labelCompany
             // 
@@ -79,15 +115,27 @@
             this.btnProfile.UseVisualStyleBackColor = true;
             this.btnProfile.Click += new System.EventHandler(this.button1_Click);
             // 
+            // btnOpenLogin
+            // 
+            this.btnOpenLogin.Location = new System.Drawing.Point(216, 18);
+            this.btnOpenLogin.Name = "btnOpenLogin";
+            this.btnOpenLogin.Size = new System.Drawing.Size(70, 34);
+            this.btnOpenLogin.TabIndex = 5;
+            this.btnOpenLogin.Text = "로그인";
+            this.btnOpenLogin.UseVisualStyleBackColor = true;
+            this.btnOpenLogin.Click += new System.EventHandler(this.btnOpenLogin_Click);
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(379, 626);
+            this.ClientSize = new System.Drawing.Size(477, 665);
             this.Controls.Add(this.btnProfile);
+            this.Controls.Add(this.btnOpenLogin);
             this.Controls.Add(this.btnSelfChat);
             this.Controls.Add(this.labelName);
             this.Controls.Add(this.labelCompany);
+            this.Controls.Add(this.listViewRecent);
             this.Controls.Add(this.treeViewUser);
             this.Name = "MainForm";
             this.Text = "MainForm";
@@ -100,9 +148,14 @@
         #endregion
 
         private System.Windows.Forms.TreeView treeViewUser;
+        private System.Windows.Forms.ListView listViewRecent;
+        private System.Windows.Forms.ColumnHeader colName;
+        private System.Windows.Forms.ColumnHeader colLastMsg;
+        private System.Windows.Forms.ColumnHeader colTime;
         private System.Windows.Forms.Label labelCompany;
         private System.Windows.Forms.Label labelName;
         private System.Windows.Forms.Button btnSelfChat;
         private System.Windows.Forms.Button btnProfile;
+        private System.Windows.Forms.Button btnOpenLogin;
     }
 }

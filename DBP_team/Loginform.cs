@@ -133,10 +133,8 @@ namespace DBP_team
                 // MainForm으로 전달
                 var main = new MainForm(user);
 
-                // 위치/크기 동기화(선택)
-                main.StartPosition = FormStartPosition.Manual;
-                main.Size = this.Size;
-                main.Location = this.Location;
+                // Do not force MainForm size to match Loginform; let MainForm use its designer size or set explicitly
+                main.StartPosition = FormStartPosition.CenterScreen;
 
                 main.FormClosed += (s, args) => this.Close();
 
