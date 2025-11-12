@@ -87,10 +87,11 @@ namespace DBP_team
                 _writer = new StreamWriter(ns, Encoding.UTF8) { AutoFlush = true };
                 _cts = new CancellationTokenSource();
 
-                // AUTH
                 _writer.WriteLine("AUTH|" + _myUserId);
                 var resp = _reader.ReadLine();
-                // Optionally check resp == AUTH_OK
+
+                // mark existing messages from other user as read
+                _writer.WriteLine("READ|" + _myUserId + "|" + _otherUserId);
 
                 _recvThread = new Thread(RecvLoop) { IsBackground = true };
                 _recvThread.Start();
@@ -119,7 +120,23 @@ namespace DBP_team
                         if (from == _otherUserId && to == _myUserId)
                         {
                             var time = DateTime.Now;
-                            this.BeginInvoke((Action)(() => AddBubbleImmediate(msg, time, false, 0)));
+                            this.BeginInvoke((Action)(() =>
+                            {
+                                AddBubbleImmediate(msg, time, false, 0);
+                                // after displaying, send READ ack to server to mark them read
+                                _writer?.WriteLine("READ|" + _myUserId + "|" + _otherUserId);
+                            }));
+                        }
+                    }
+                    else if (parts.Length >= 3 && parts[0] == "READ")
+                    {
+                        // other user read my messages; update my bubbles to show '읽음'
+                        int readerId = 0, senderId = 0;
+                        int.TryParse(parts[1], out readerId);
+                        int.TryParse(parts[2], out senderId);
+                        if (readerId == _otherUserId && senderId == _myUserId)
+                        {
+                            this.BeginInvoke((Action)(MarkMyMessagesRead));
                         }
                     }
                 }
@@ -127,6 +144,21 @@ namespace DBP_team
             catch
             {
                 // ignore
+            }
+        }
+
+        private void MarkMyMessagesRead()
+        {
+            foreach (Control c in _flow.Controls)
+            {
+                var bubble = c as ChatBubbleControl;
+                if (bubble == null) continue;
+                var t = bubble.Tag as Tuple<string, DateTime, bool, int>;
+                if (t == null) continue;
+                if (t.Item3) // my message
+                {
+                    bubble.SetRead(true);
+                }
             }
         }
 
@@ -191,6 +223,7 @@ namespace DBP_team
         private void AddBubbleImmediate(string message, DateTime time, bool isMine, int id)
         {
             var bubble = CreateBubble(message, time, isMine, id);
+            if (isMine) bubble.SetRead(false); // until READ received
             _flow.Controls.Add(bubble);
             _flow.ScrollControlIntoView(bubble);
         }

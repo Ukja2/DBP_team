@@ -11,6 +11,7 @@ namespace DBP_team.Controls
         private Panel panelBubble;
         private Label lblMessage;
         private Label lblTime;
+        private Label lblRead; // add read indicator
 
         private const int SIDE_MARGIN = 12;
         private const int DEFAULT_PADDING_H = 8;
@@ -57,6 +58,7 @@ namespace DBP_team.Controls
             this.panelBubble = new Panel();
             this.lblMessage = new Label();
             this.lblTime = new Label();
+            this.lblRead = new Label();
 
             // panelBubble 기본 설정
             this.panelBubble.BackColor = Color.LightGray;
@@ -77,9 +79,16 @@ namespace DBP_team.Controls
             this.lblTime.TextAlign = ContentAlignment.MiddleRight;
             this.lblTime.ForeColor = Color.FromArgb(120, 0, 0, 0);
 
+            // lblRead: 왼쪽 아래 작은 표시
+            this.lblRead.AutoSize = true;
+            this.lblRead.Font = new Font("나눔고딕", 8F);
+            this.lblRead.Text = string.Empty;
+            this.lblRead.ForeColor = Color.FromArgb(120, 0, 0, 0);
+
             // 조립
             this.panelBubble.Controls.Add(lblMessage);
             this.panelBubble.Controls.Add(lblTime);
+            this.panelBubble.Controls.Add(lblRead);
             this.Controls.Add(panelBubble);
 
             // 기본 크기
@@ -105,6 +114,9 @@ namespace DBP_team.Controls
             int innerWidth = Math.Max(1, panelBubble.ClientSize.Width - panelBubble.Padding.Horizontal);
             lblTime.Size = new Size(innerWidth, lblTime.Height);
             lblTime.Location = new Point(panelBubble.Padding.Left, panelBubble.Padding.Top + lblMessage.Height + 4);
+
+            // 읽음 라벨은 좌측 하단, 시간과 같은 y에 두되 좌측 정렬
+            lblRead.Location = new Point(panelBubble.Padding.Left, lblTime.Top);
 
             // panelBubble 높이 자동 확대
             panelBubble.Height = panelBubble.Padding.Vertical + lblMessage.Height + lblTime.Height + 4;
@@ -181,6 +193,7 @@ namespace DBP_team.Controls
             // 5) lblTime 폭을 panel 내부폭으로 맞춤(오른쪽 정렬 유지)
             int innerWidth = Math.Max(1, panelBubble.ClientSize.Width - panelBubble.Padding.Horizontal);
             lblTime.Size = new Size(innerWidth, lblTime.Height);
+            // read label stays small
 
             // 6) 컨트롤 전체 너비 보장(호출자에서 bubble.Width는 flow.ClientSize.Width로 설정되어야 함)
             if (this.Width < containerWidth) this.Width = containerWidth;
@@ -192,6 +205,7 @@ namespace DBP_team.Controls
                 panelBubble.BackColor = Color.FromArgb(0, 132, 255);
                 lblMessage.ForeColor = Color.White;
                 lblTime.ForeColor = Color.FromArgb(200, 255, 255, 255);
+                lblRead.ForeColor = Color.FromArgb(200, 255, 255, 255);
             }
             else
             {
@@ -199,6 +213,7 @@ namespace DBP_team.Controls
                 panelBubble.BackColor = Color.FromArgb(240, 240, 240);
                 lblMessage.ForeColor = Color.Black;
                 lblTime.ForeColor = Color.FromArgb(120, 0, 0, 0);
+                lblRead.ForeColor = Color.FromArgb(120, 0, 0, 0);
             }
 
             // 8) 높이 재조정
@@ -217,6 +232,11 @@ namespace DBP_team.Controls
         private void ChatBubbleControl_Load(object sender, EventArgs e)
         {
             // 빈 핸들러(디자이너가 연결할 수 있음)
+        }
+
+        public void SetRead(bool isRead)
+        {
+            lblRead.Text = isRead ? "읽음" : string.Empty;
         }
     }
 }

@@ -15,6 +15,7 @@ namespace DBP_team
     /// Protocol (per line):
     /// AUTH|userId
     /// MSG|fromUserId|toUserId|base64(message)
+    /// READ|readerUserId|senderUserId
     /// QUIT|userId
     /// Server does not echo to sender; only routes to receiver.
     /// </summary>
@@ -134,6 +135,14 @@ namespace DBP_team
                         RouteMessage(from, to, msgText);
                         writer.WriteLine("SENT");
                     }
+                    else if (cmd == "READ" && parts.Length >= 3)
+                    {
+                        if (!int.TryParse(parts[1], out int readerId)) continue;
+                        if (!int.TryParse(parts[2], out int senderId)) continue;
+                        TryMarkRead(readerId, senderId);
+                        NotifyRead(readerId, senderId);
+                        writer.WriteLine("READ_OK");
+                    }
                     else if (cmd == "QUIT")
                     {
                         break;
@@ -194,12 +203,27 @@ namespace DBP_team
             }
         }
 
+        private static void NotifyRead(int readerId, int senderId)
+        {
+            var line = "READ|" + readerId + "|" + senderId;
+            List<ClientConn> targets = null;
+            lock (_lock)
+            {
+                if (_clients.TryGetValue(senderId, out var list)) targets = new List<ClientConn>(list);
+            }
+            if (targets == null) return;
+            foreach (var c in targets)
+            {
+                try { c.Writer.WriteLine(line); } catch { }
+            }
+        }
+
         private static void TryInsertMessage(int from, int to, string message)
         {
             try
             {
                 DBManager.Instance.ExecuteNonQuery(
-                    "INSERT INTO chat (sender_id, receiver_id, message, created_at) VALUES (@s,@r,@m,NOW())",
+                    "INSERT INTO chat (sender_id, receiver_id, message, created_at, is_read) VALUES (@s,@r,@m,NOW(),0)",
                     new MySqlParameter("@s", from),
                     new MySqlParameter("@r", to),
                     new MySqlParameter("@m", message));
@@ -207,6 +231,21 @@ namespace DBP_team
             catch (Exception ex)
             {
                 Console.WriteLine("DB insert failed: " + ex.Message);
+            }
+        }
+
+        private static void TryMarkRead(int readerId, int senderId)
+        {
+            try
+            {
+                DBManager.Instance.ExecuteNonQuery(
+                    "UPDATE chat SET is_read = 1 WHERE receiver_id = @reader AND sender_id = @sender AND is_read = 0",
+                    new MySqlParameter("@reader", readerId),
+                    new MySqlParameter("@sender", senderId));
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("DB read update failed: " + ex.Message);
             }
         }
 
