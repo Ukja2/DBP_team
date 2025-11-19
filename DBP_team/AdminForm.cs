@@ -17,7 +17,7 @@ namespace DBP_team
 
         // Dept
         private TextBox _txtDeptName, _txtDeptSearch;
-        private Button _btnDeptAdd, _btnDeptUpdate, _btnDeptSearch, _btnSeedDept;
+        private Button _btnDeptAdd, _btnDeptUpdate, _btnDeptSearch; // removed seed button
         private DataGridView _gridDept;
 
         // User-Dept
@@ -64,19 +64,28 @@ namespace DBP_team
             // Tab 1: 부서관리
             var pageDept = new TabPage("부서관리");
             var pnlDeptTop = new Panel { Dock = DockStyle.Top, Height = 60, Padding = new Padding(8) };
-            _txtDeptName = new TextBox { Width = 220 };
-            _btnDeptAdd = new Button { Text = "등록", Left = 230, Width = 80 };
-            _btnDeptUpdate = new Button { Text = "변경", Left = 315, Width = 80 };
-            _btnSeedDept = new Button { Text = "기본부서 생성", Left = 400, Width = 110 };
-            _txtDeptSearch = new TextBox { Left = 520, Width = 220 };
-            _btnDeptSearch = new Button { Text = "검색", Left = 745, Width = 80 };
+
+            var lblDeptName = new Label { Text = "부서명", AutoSize = true, Top = 12, Left = 8 };
+            _txtDeptName = new TextBox { Width = 220, Left = 60, Top = 8 };
+            _btnDeptAdd = new Button { Text = "등록", Left = 290, Top = 7, Width = 80 };
+            _btnDeptUpdate = new Button { Text = "변경", Left = 375, Top = 7, Width = 80 };
+
+            var lblDeptSearch = new Label { Text = "검색(부서명)", AutoSize = true, Top = 12, Left = 470 };
+            _txtDeptSearch = new TextBox { Left = 560, Top = 8, Width = 220 };
+            _btnDeptSearch = new Button { Text = "검색", Left = 785, Top = 7, Width = 80 };
 
             _btnDeptAdd.Click += (s, e) => AddDepartment();
             _btnDeptUpdate.Click += (s, e) => UpdateDepartment();
             _btnDeptSearch.Click += (s, e) => LoadDeptGrid(_txtDeptSearch.Text?.Trim());
-            _btnSeedDept.Click += (s, e) => SeedDepartments();
 
-            pnlDeptTop.Controls.AddRange(new Control[] { _txtDeptName, _btnDeptAdd, _btnDeptUpdate, _btnSeedDept, _txtDeptSearch, _btnDeptSearch });
+            pnlDeptTop.Controls.Add(lblDeptName);
+            pnlDeptTop.Controls.Add(_txtDeptName);
+            pnlDeptTop.Controls.Add(_btnDeptAdd);
+            pnlDeptTop.Controls.Add(_btnDeptUpdate);
+            pnlDeptTop.Controls.Add(lblDeptSearch);
+            pnlDeptTop.Controls.Add(_txtDeptSearch);
+            pnlDeptTop.Controls.Add(_btnDeptSearch);
+
             _gridDept = new DataGridView { Dock = DockStyle.Fill, ReadOnly = true, AllowUserToAddRows = false, SelectionMode = DataGridViewSelectionMode.FullRowSelect, AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill };
             _gridDept.MultiSelect = false;
             _gridDept.CellClick += (s, e) => { if (e.RowIndex >= 0) _txtDeptName.Text = Convert.ToString(_gridDept.Rows[e.RowIndex].Cells["name"].Value); };
@@ -86,13 +95,23 @@ namespace DBP_team
             // Tab 2: 사용자 소속 변경
             var pageUserDept = new TabPage("사용자 소속 변경");
             var pnlUserTop = new Panel { Dock = DockStyle.Top, Height = 60, Padding = new Padding(8) };
-            _txtUserSearch = new TextBox { Width = 240 };
-            _btnUserSearch = new Button { Text = "검색", Left = 245, Width = 80 };
+
+            var lblUserSearch = new Label { Text = "사용자 검색", AutoSize = true, Top = 12, Left = 8 };
+            _txtUserSearch = new TextBox { Width = 240, Left = 80, Top = 8 };
+            _btnUserSearch = new Button { Text = "검색", Left = 325, Top = 7, Width = 80 };
             _btnUserSearch.Click += (s, e) => LoadUsersGrid(_txtUserSearch.Text?.Trim());
-            _cboDeptForUser = new ComboBox { Left = 330, Width = 240, DropDownStyle = ComboBoxStyle.DropDownList };
-            _btnApplyDept = new Button { Text = "선택 사용자 소속 변경", Left = 575, Width = 180 };
+
+            var lblDeptSelect = new Label { Text = "부서 선택", AutoSize = true, Top = 12, Left = 420 };
+            _cboDeptForUser = new ComboBox { Left = 480, Top = 8, Width = 240, DropDownStyle = ComboBoxStyle.DropDownList };
+            _btnApplyDept = new Button { Text = "선택 사용자 소속 변경", Left = 725, Top = 7, Width = 180 };
             _btnApplyDept.Click += (s, e) => ApplyUserDepartment();
-            pnlUserTop.Controls.AddRange(new Control[] { _txtUserSearch, _btnUserSearch, _cboDeptForUser, _btnApplyDept });
+
+            pnlUserTop.Controls.Add(lblUserSearch);
+            pnlUserTop.Controls.Add(_txtUserSearch);
+            pnlUserTop.Controls.Add(_btnUserSearch);
+            pnlUserTop.Controls.Add(lblDeptSelect);
+            pnlUserTop.Controls.Add(_cboDeptForUser);
+            pnlUserTop.Controls.Add(_btnApplyDept);
 
             _gridUsers = new DataGridView { Dock = DockStyle.Fill, ReadOnly = true, AllowUserToAddRows = false, SelectionMode = DataGridViewSelectionMode.FullRowSelect, AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill };
             _gridUsers.MultiSelect = true;
@@ -102,13 +121,31 @@ namespace DBP_team
             // Tab 3: 대화 검색
             var pageChat = new TabPage("대화 검색");
             var pnlChatTop = new Panel { Dock = DockStyle.Top, Height = 70, Padding = new Padding(8) };
-            _dtFrom = new DateTimePicker { Width = 140, Value = DateTime.Now.Date.AddDays(-7) };
-            _dtTo = new DateTimePicker { Left = 150, Width = 140, Value = DateTime.Now.Date.AddDays(1).AddSeconds(-1) };
-            _txtKeyword = new TextBox { Left = 300, Width = 220 };
-            _cboUserFilter = new ComboBox { Left = 525, Width = 200, DropDownStyle = ComboBoxStyle.DropDownList };
-            _btnChatSearch = new Button { Text = "검색", Left = 730, Width = 80 };
+
+            var lblFrom = new Label { Text = "시작일", AutoSize = true, Top = 12, Left = 8 };
+            _dtFrom = new DateTimePicker { Width = 140, Left = 60, Top = 8, Value = DateTime.Now.Date.AddDays(-7) };
+
+            var lblTo = new Label { Text = "종료일", AutoSize = true, Top = 12, Left = 210 };
+            _dtTo = new DateTimePicker { Left = 260, Top = 8, Width = 140, Value = DateTime.Now.Date.AddDays(1).AddSeconds(-1) };
+
+            var lblKeyword = new Label { Text = "키워드", AutoSize = true, Top = 12, Left = 410 };
+            _txtKeyword = new TextBox { Left = 455, Top = 8, Width = 220 };
+
+            var lblUser = new Label { Text = "사용자", AutoSize = true, Top = 12, Left = 685 };
+            _cboUserFilter = new ComboBox { Left = 730, Top = 8, Width = 200, DropDownStyle = ComboBoxStyle.DropDownList };
+
+            _btnChatSearch = new Button { Text = "검색", Left = 940, Top = 7, Width = 60 };
             _btnChatSearch.Click += (s, e) => LoadChatGrid();
-            pnlChatTop.Controls.AddRange(new Control[] { _dtFrom, _dtTo, _txtKeyword, _cboUserFilter, _btnChatSearch });
+
+            pnlChatTop.Controls.Add(lblFrom);
+            pnlChatTop.Controls.Add(_dtFrom);
+            pnlChatTop.Controls.Add(lblTo);
+            pnlChatTop.Controls.Add(_dtTo);
+            pnlChatTop.Controls.Add(lblKeyword);
+            pnlChatTop.Controls.Add(_txtKeyword);
+            pnlChatTop.Controls.Add(lblUser);
+            pnlChatTop.Controls.Add(_cboUserFilter);
+            pnlChatTop.Controls.Add(_btnChatSearch);
 
             _gridChat = new DataGridView { Dock = DockStyle.Fill, ReadOnly = true, AllowUserToAddRows = false, SelectionMode = DataGridViewSelectionMode.FullRowSelect, AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill };
             pageChat.Controls.Add(_gridChat);
@@ -120,7 +157,7 @@ namespace DBP_team
             Controls.Add(_tabs);
         }
 
-        // 부서 목록 로드
+        // 부서 목록 로드 - hide IDs from view
         private void LoadDeptGrid(string keyword = null)
         {
             var sql = "SELECT id, name FROM departments WHERE company_id = @cid " +
@@ -131,6 +168,8 @@ namespace DBP_team
                 : new[] { new MySqlParameter("@cid", _companyId), new MySqlParameter("@kw", "%" + keyword + "%") };
             var dt = DBManager.Instance.ExecuteDataTable(sql, pars);
             _gridDept.DataSource = dt;
+            if (_gridDept.Columns.Contains("id")) _gridDept.Columns["id"].Visible = false;
+            if (_gridDept.Columns.Contains("name")) _gridDept.Columns["name"].HeaderText = "부서명";
         }
 
         private void AddDepartment()
@@ -157,19 +196,6 @@ namespace DBP_team
             LoadDeptComboForUser();
         }
 
-        private void SeedDepartments()
-        {
-            var names = new[] { "인사부서", "개발부서", "마케팅부서" };
-            foreach (var n in names)
-            {
-                DBManager.Instance.ExecuteNonQuery(
-                    "INSERT INTO departments (company_id, name) SELECT @cid, @name FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM departments WHERE company_id=@cid AND name=@name)",
-                    new MySqlParameter("@cid", _companyId), new MySqlParameter("@name", n));
-            }
-            LoadDeptGrid();
-            LoadDeptComboForUser();
-        }
-
         private void LoadDeptComboForUser()
         {
             var dt = DBManager.Instance.ExecuteDataTable(
@@ -180,14 +206,22 @@ namespace DBP_team
             _cboDeptForUser.ValueMember = "id";
         }
 
+        // 사용자 목록 - show department name; hide ids
         private void LoadUsersGrid(string keyword = null)
         {
-            var sql = "SELECT id, COALESCE(full_name,email) AS name, email, department_id FROM users WHERE company_id=@cid";
+            var sql = "SELECT u.id, COALESCE(u.full_name,u.email) AS name, u.email, u.department_id, d.name AS department " +
+                      "FROM users u LEFT JOIN departments d ON d.id = u.department_id " +
+                      "WHERE u.company_id=@cid";
             var pars = new System.Collections.Generic.List<MySqlParameter> { new MySqlParameter("@cid", _companyId) };
-            if (!string.IsNullOrWhiteSpace(keyword)) { sql += " AND (full_name LIKE @kw OR email LIKE @kw)"; pars.Add(new MySqlParameter("@kw", "%" + keyword + "%")); }
+            if (!string.IsNullOrWhiteSpace(keyword)) { sql += " AND (u.full_name LIKE @kw OR u.email LIKE @kw)"; pars.Add(new MySqlParameter("@kw", "%" + keyword + "%")); }
             sql += " ORDER BY name";
             var dt = DBManager.Instance.ExecuteDataTable(sql, pars.ToArray());
             _gridUsers.DataSource = dt;
+            if (_gridUsers.Columns.Contains("id")) _gridUsers.Columns["id"].Visible = false;
+            if (_gridUsers.Columns.Contains("department_id")) _gridUsers.Columns["department_id"].Visible = false;
+            if (_gridUsers.Columns.Contains("name")) _gridUsers.Columns["name"].HeaderText = "이름";
+            if (_gridUsers.Columns.Contains("email")) _gridUsers.Columns["email"].HeaderText = "이메일";
+            if (_gridUsers.Columns.Contains("department")) _gridUsers.Columns["department"].HeaderText = "부서";
         }
 
         private void ApplyUserDepartment()
@@ -219,6 +253,7 @@ namespace DBP_team
             _cboUserFilter.SelectedIndex = -1;
         }
 
+        // 채팅 검색 - show names only
         private void LoadChatGrid()
         {
             var from = _dtFrom.Value;
@@ -227,7 +262,7 @@ namespace DBP_team
             int? userId = _cboUserFilter.SelectedIndex >= 0 ? (int?)Convert.ToInt32(_cboUserFilter.SelectedValue) : null;
 
             var sql = new StringBuilder();
-            sql.Append("SELECT c.id, c.sender_id, s.full_name AS sender, c.receiver_id, r.full_name AS receiver, c.message, c.created_at ");
+            sql.Append("SELECT s.full_name AS sender, r.full_name AS receiver, c.message AS message, c.created_at AS created_at ");
             sql.Append("FROM chat c ");
             sql.Append("LEFT JOIN users s ON s.id = c.sender_id ");
             sql.Append("LEFT JOIN users r ON r.id = c.receiver_id ");
@@ -242,6 +277,10 @@ namespace DBP_team
 
             var dt = DBManager.Instance.ExecuteDataTable(sql.ToString(), pars.ToArray());
             _gridChat.DataSource = dt;
+            if (_gridChat.Columns.Contains("sender")) _gridChat.Columns["sender"].HeaderText = "보낸사람";
+            if (_gridChat.Columns.Contains("receiver")) _gridChat.Columns["receiver"].HeaderText = "받는사람";
+            if (_gridChat.Columns.Contains("message")) _gridChat.Columns["message"].HeaderText = "내용";
+            if (_gridChat.Columns.Contains("created_at")) _gridChat.Columns["created_at"].HeaderText = "시간";
         }
     }
 }
