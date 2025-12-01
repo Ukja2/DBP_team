@@ -310,7 +310,7 @@ namespace DBP_team
         }
 
         // Load recent chats (only users that have chat rows with current user), ordered by last message desc
-        private void LoadRecentChats()
+        public void LoadRecentChats()
         {
             try
             {

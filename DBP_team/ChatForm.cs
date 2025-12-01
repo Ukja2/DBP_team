@@ -179,6 +179,7 @@ namespace DBP_team
                             this.BeginInvoke((Action)(() =>
                             {
                                 AddBubbleImmediate(msg, time, false, 0);
+                                UpdateRecentList();
                                 // after displaying, send READ ack to server to mark them read
                                 _writer?.WriteLine("READ|" + _myUserId + "|" + _otherUserId);
                             }));
@@ -546,6 +547,7 @@ namespace DBP_team
                 txtChat.Clear();
                 txtChat.Focus();
                 AddBubbleImmediate(text, sentTime, true, 0);
+                UpdateRecentList();
             }
             catch (Exception ex)
             {
@@ -636,6 +638,7 @@ namespace DBP_team
 
                     // locally show file bubble immediately
                     AddBubbleImmediateFile(fileId, Path.GetFileName(path), DateTime.Now, true);
+                    UpdateRecentList();
 
                     MessageBox.Show("파일 전송 요청이 전송되었습니다.", "파일 전송", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
@@ -664,6 +667,26 @@ namespace DBP_team
             if (isMine) bubble.SetRead(false); // until READ received
             _flow.Controls.Add(bubble);
             _flow.ScrollControlIntoView(bubble);
+        }
+
+        // Try to refresh recent list in main form so "내가 마지막으로 보낸" 대화가 바로 갱신되도록 요청
+        private void UpdateRecentList()
+        {
+            try
+            {
+                MainForm main = null;
+                if (this.Owner is MainForm) main = (MainForm)this.Owner;
+                if (main == null)
+                {
+                    main = System.Windows.Forms.Application.OpenForms.OfType<MainForm>().FirstOrDefault();
+                }
+
+                if (main != null)
+                {
+                    try { main.LoadRecentChats(); } catch { }
+                }
+            }
+            catch { }
         }
     }
 }
