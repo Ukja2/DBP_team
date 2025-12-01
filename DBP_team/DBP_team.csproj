@@ -150,6 +150,9 @@
     <Compile Include="UI\MultiProfileEditForm.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="UI\MultiProfileGroupEditForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="UI\MultiProfilesForm.cs">
       <SubType>Form</SubType>
     </Compile>

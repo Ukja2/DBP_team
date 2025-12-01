@@ -81,10 +81,7 @@ namespace DBP_team
 
             _initializedFromCtor = true;
 
-            // 로그인 사용자의 표기명도 멀티프로필에 맞춰서 표시
-            var display = MultiProfileService.GetDisplayNameForViewer(_userId, _userId);
-            labelCompany.Text = string.IsNullOrWhiteSpace(_companyName) ? $"회사 ID:{_companyId}" : _companyName;
-            labelName.Text = string.IsNullOrWhiteSpace(display) ? (string.IsNullOrWhiteSpace(_userName) ? "사용자: (알 수 없음)" : $"사용자: {_userName}") : $"사용자: {display}";
+            UpdateSelfHeaderDisplay();
 
             LoadCompanyTree();
             LoadRecentChats();
@@ -116,10 +113,7 @@ namespace DBP_team
                     }
                 }
 
-                // 로그인 사용자의 표기명도 멀티프로필에 맞춰서 표시
-                var display = MultiProfileService.GetDisplayNameForViewer(_userId, _userId);
-                labelCompany.Text = string.IsNullOrWhiteSpace(_companyName) ? $"회사 ID:{_companyId}" : _companyName;
-                labelName.Text = string.IsNullOrWhiteSpace(display) ? (string.IsNullOrWhiteSpace(_userName) ? "사용자: (알 수 없음)" : $"사용자: {_userName}") : $"사용자: {display}";
+                UpdateSelfHeaderDisplay();
                 LoadCompanyTree();
                 LoadRecentChats();
 
@@ -131,6 +125,13 @@ namespace DBP_team
                 labelCompany.Text = "회사 정보 없음";
                 labelName.Text = "사용자 정보 없음";
             }
+        }
+
+        private void UpdateSelfHeaderDisplay()
+        {
+            // 내가 보는 내 이름은 기본 full_name/email 유지 (원하면 MultiProfileService 사용 가능) -> 현재 유지
+            labelCompany.Text = string.IsNullOrWhiteSpace(_companyName) ? $"회사 ID:{_companyId}" : _companyName;
+            labelName.Text = string.IsNullOrWhiteSpace(_userName) ? "사용자: (알 수 없음)" : $"사용자: {_userName}";
         }
 
         // 트리뷰 더블클릭 이벤트 훅
@@ -153,9 +154,9 @@ namespace DBP_team
                 var parts = tag.Split(':');
                 if (parts.Length == 2 && int.TryParse(parts[1], out int otherId))
                 {
-                    // otherName은 otherId 관점에서의 내 표시명(상대에게 보일 내 이름)을 사용
-                    var otherName = MultiProfileService.GetDisplayNameForViewer(otherId, _userId);
-                    if (string.IsNullOrWhiteSpace(otherName)) otherName = e.Node.Text;
+                    // 상대가 나에게 어떻게 보일지를 가져온다 (owner=other, viewer=me)
+                    var otherDisplay = MultiProfileService.GetDisplayNameForViewer(otherId, _userId);
+                    if (string.IsNullOrWhiteSpace(otherDisplay)) otherDisplay = e.Node.Text;
 
                     // 로그인된 사용자 id(_userId) 가 있어야 함
                     if (_userId <= 0)
@@ -164,7 +165,7 @@ namespace DBP_team
                         return;
                     }
 
-                    var chat = new ChatForm(_userId, otherId, otherName);
+                    var chat = new ChatForm(_userId, otherId, otherDisplay);
                     chat.StartPosition = FormStartPosition.CenterParent;
                     chat.Show(this);
                 }
@@ -198,6 +199,9 @@ namespace DBP_team
             var pf = new ProfileForm(_userId);
             pf.StartPosition = FormStartPosition.CenterParent;
             pf.ShowDialog(this);
+            // 프로필 변경 후 트리/최근 목록 새로고침하여 반영
+            LoadCompanyTree();
+            LoadRecentChats();
         }
 
         // 기존 LoadCompanyTree() 메서드 수정: 로그인 사용자는 노드에 추가하지 않음
@@ -243,7 +247,7 @@ namespace DBP_team
                             var teamNode = new TreeNode(teamName) { Tag = $"team:{teamId}" };
 
                             var dtUsersInTeam = DBManager.Instance.ExecuteDataTable(
-                                "SELECT id, full_name, email, role FROM users WHERE company_id = @cid AND department_id = @did AND team_id = @tid ORDER BY full_name",
+                                "SELECT id, full_name, email FROM users WHERE company_id = @cid AND department_id = @did AND team_id = @tid ORDER BY full_name",
                                 new MySqlParameter("@cid", _companyId),
                                 new MySqlParameter("@did", depId),
                                 new MySqlParameter("@tid", teamId));
@@ -256,10 +260,12 @@ namespace DBP_team
                                     // 로그인 사용자면 건너뜀
                                     if (uid == _userId) continue;
 
-                                    var display = u["full_name"]?.ToString();
-                                    if (string.IsNullOrWhiteSpace(display)) display = u["email"]?.ToString() ?? "이름 없음";
-                                    var userNode = new TreeNode(display) { Tag = $"user:{uid}" };
-                                    teamNode.Nodes.Add(userNode);
+                                    var baseDisplay = u["full_name"]?.ToString();
+                                    if (string.IsNullOrWhiteSpace(baseDisplay)) baseDisplay = u["email"]?.ToString() ?? "이름 없음";
+                                    // 멀티프로필 적용 (owner=uid, viewer=_userId)
+                                    var mpDisplay = MultiProfileService.GetDisplayNameForViewer(uid, _userId);
+                                    if (!string.IsNullOrWhiteSpace(mpDisplay)) baseDisplay = mpDisplay;
+                                    teamNode.Nodes.Add(new TreeNode(baseDisplay) { Tag = $"user:{uid}" });
                                 }
                             }
 
@@ -268,7 +274,7 @@ namespace DBP_team
                     }
 
                     var dtUsersNoTeam = DBManager.Instance.ExecuteDataTable(
-                        "SELECT id, full_name, email, role FROM users WHERE company_id = @cid AND department_id = @did AND (team_id IS NULL OR team_id = 0) ORDER BY full_name",
+                        "SELECT id, full_name, email FROM users WHERE company_id = @cid AND department_id = @did AND (team_id IS NULL OR team_id = 0) ORDER BY full_name",
                         new MySqlParameter("@cid", _companyId),
                         new MySqlParameter("@did", depId));
 
@@ -280,10 +286,11 @@ namespace DBP_team
                             // 로그인 사용자면 건너뜀
                             if (uid == _userId) continue;
 
-                            var display = u["full_name"]?.ToString();
-                            if (string.IsNullOrWhiteSpace(display)) display = u["email"]?.ToString() ?? "이름 없음";
-                            var userNode = new TreeNode(display) { Tag = $"user:{uid}" };
-                            depNode.Nodes.Add(userNode);
+                            var baseDisplay = u["full_name"]?.ToString();
+                            if (string.IsNullOrWhiteSpace(baseDisplay)) baseDisplay = u["email"]?.ToString() ?? "이름 없음";
+                            var mpDisplay = MultiProfileService.GetDisplayNameForViewer(uid, _userId);
+                            if (!string.IsNullOrWhiteSpace(mpDisplay)) baseDisplay = mpDisplay;
+                            depNode.Nodes.Add(new TreeNode(baseDisplay) { Tag = $"user:{uid}" });
                         }
                     }
 
@@ -327,12 +334,15 @@ namespace DBP_team
                 foreach (DataRow r in dt.Rows)
                 {
                     var uid = Convert.ToInt32(r["user_id"]);
-                    var name = r["name"]?.ToString() ?? "(이름 없음)";
+                    var nameBase = r["name"]?.ToString() ?? "(이름 없음)";
+                    // 멀티프로필 적용 (상대가 나에게 보여줄 이름)
+                    var mpName = MultiProfileService.GetDisplayNameForViewer(uid, _userId);
+                    if (!string.IsNullOrWhiteSpace(mpName)) nameBase = mpName;
                     var msg = r.Table.Columns.Contains("message") ? r["message"]?.ToString() : string.Empty;
                     var time = r.Table.Columns.Contains("created_at") && r["created_at"] != DBNull.Value ? Convert.ToDateTime(r["created_at"]) : (DateTime?)null;
 
                     var timeText = time.HasValue ? FormatRelativeTime(time.Value) : string.Empty;
-                    var lvi = new ListViewItem(new[] { name, msg ?? string.Empty, timeText }) { Tag = uid };
+                    var lvi = new ListViewItem(new[] { nameBase, msg ?? string.Empty, timeText }) { Tag = uid };
                     listViewRecent.Items.Add(lvi);
                 }
             }
@@ -348,10 +358,9 @@ namespace DBP_team
             var lvi = listViewRecent.SelectedItems[0];
             if (!(lvi.Tag is int otherId)) return;
 
-            var otherName = lvi.Text;
-            if (_userId <= 0) { MessageBox.Show("로그인 사용자 정보가 없습니다.", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error); return; }
-
-            var chat = new ChatForm(_userId, otherId, otherName);
+            var otherDisplay = MultiProfileService.GetDisplayNameForViewer(otherId, _userId);
+            if (string.IsNullOrWhiteSpace(otherDisplay)) otherDisplay = lvi.Text;
+            var chat = new ChatForm(_userId, otherId, otherDisplay);
             chat.StartPosition = FormStartPosition.CenterParent;
             chat.Show(this);
         }
@@ -411,7 +420,11 @@ namespace DBP_team
                     DateTime newest = _lastPollTime;
                     foreach (DataRow r in dt.Rows)
                     {
-                        var senderName = r["sender_name"]?.ToString() ?? "(알수없음)";
+                        var senderId = Convert.ToInt32(r["sender_id"]);
+                        var baseName = r["sender_name"]?.ToString() ?? "(알수없음)";
+                        var mpName = MultiProfileService.GetDisplayNameForViewer(senderId, _userId);
+                        if (!string.IsNullOrWhiteSpace(mpName)) baseName = mpName;
+
                         var message = r["message"]?.ToString() ?? "";
                         var created = r["created_at"] != DBNull.Value ? Convert.ToDateTime(r["created_at"]) : DateTime.Now;
                         if (created > newest) newest = created;
@@ -421,7 +434,7 @@ namespace DBP_team
                         // Show balloon (non-modal)
                         try
                         {
-                            _notifyIcon.BalloonTipTitle = $"새 메시지: {senderName}";
+                            _notifyIcon.BalloonTipTitle = $"새 메시지: {baseName}";
                             _notifyIcon.BalloonTipText = shortMsg;
                             _notifyIcon.ShowBalloonTip(4000);
                         }
