@@ -13,9 +13,9 @@ namespace DBP_team
         private TextBox txtQuery;
         private Button btnSearch;
         private ListBox listResults;
+        private Label lblStatus;
         private Button btnOk;
         private Button btnCancel;
-        private Label lblStatus;
 
         public string SelectedPostalCode { get; private set; }
         public string SelectedAddress { get; private set; }
@@ -40,18 +40,17 @@ namespace DBP_team
 
             txtQuery = new TextBox { Location = new Point(12, 12), Size = new Size(436, 24) };
             btnSearch = new Button { Location = new Point(456, 10), Size = new Size(92, 26), Text = "검색" };
-            btnSearch.Click += async (s, e) => await DoSearchAsync();
-
             listResults = new ListBox { Location = new Point(12, 44), Size = new Size(536, 260) };
-            listResults.DoubleClick += (s, e) => { AcceptSelection(); };
-
             lblStatus = new Label { Location = new Point(12, 308), Size = new Size(536, 20), Text = "" };
-
             btnOk = new Button { Location = new Point(372, 332), Size = new Size(80, 28), Text = "확인" };
-            btnOk.Click += (s, e) => { AcceptSelection(); };
-
             btnCancel = new Button { Location = new Point(468, 332), Size = new Size(80, 28), Text = "취소" };
-            btnCancel.Click += (s, e) => { this.DialogResult = DialogResult.Cancel; this.Close(); };
+
+            // --- 이벤트 핸들러를 별도 메서드로 연결 ---
+            btnSearch.Click += BtnSearch_Click;
+            listResults.DoubleClick += ListResults_DoubleClick;
+            btnOk.Click += BtnOk_Click;
+            btnCancel.Click += BtnCancel_Click;
+            // -----------------------------------------
 
             this.Controls.Add(txtQuery);
             this.Controls.Add(btnSearch);
@@ -61,6 +60,30 @@ namespace DBP_team
             this.Controls.Add(btnCancel);
         }
 
+        // --- 이벤트 핸들러 메서드 구현 ---
+
+        private async void BtnSearch_Click(object sender, EventArgs e)
+        {
+            await DoSearchAsync();
+        }
+
+        private void ListResults_DoubleClick(object sender, EventArgs e)
+        {
+            AcceptSelection();
+        }
+
+        private void BtnOk_Click(object sender, EventArgs e)
+        {
+            AcceptSelection();
+        }
+
+        private void BtnCancel_Click(object sender, EventArgs e)
+        {
+            this.DialogResult = DialogResult.Cancel;
+            this.Close();
+        }
+
+        // --- 로직 메서드 ---
         private void AcceptSelection()
         {
             if (listResults.SelectedItem == null) return;
@@ -106,7 +129,6 @@ namespace DBP_team
             }
         }
 
-        // Use Juso address API
         private async Task<List<AddressResult>> SearchAddressAsync(string query)
         {
             var list = new List<AddressResult>();
@@ -125,7 +147,6 @@ namespace DBP_team
 
                 var json = await resp.Content.ReadAsStringAsync();
 
-                // parse juso JSON: find each juso object and extract roadAddr and zipNo; fall back to jibunAddr
                 var jusoArrayPos = json.IndexOf("\"juso\":", StringComparison.OrdinalIgnoreCase);
                 if (jusoArrayPos >= 0)
                 {

@@ -158,6 +158,10 @@ namespace DBP_team
                     CompanyName = row["company_name"] == DBNull.Value ? null : row["company_name"].ToString()
                 };
 
+                // --- 로그인 로그 기록 추가 ---
+                DBManager.LogUserActivity(user.Id, "LOGIN");
+                // --------------------------
+
                 AppSession.CurrentUser = user;
 
                 SaveLoginSettings();

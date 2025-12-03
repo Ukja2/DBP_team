@@ -131,6 +131,29 @@ namespace DBP_team
             }
         }
 
+        /// <summary>
+        /// 사용자의 로그인/로그아웃 활동을 기록합니다.
+        /// </summary>
+        /// <param name="userId">사용자 ID</param>
+        /// <param name="activityType">'LOGIN' 또는 'LOGOUT'</param>
+        public static void LogUserActivity(int userId, string activityType)
+        {
+            if (userId <= 0 || string.IsNullOrWhiteSpace(activityType)) return;
+
+            const string sql = "INSERT INTO user_activity_logs (user_id, activity_type) VALUES (@userId, @activityType)";
+            try
+            {
+                Instance.ExecuteNonQuery(sql,
+                    new MySqlParameter("@userId", userId),
+                    new MySqlParameter("@activityType", activityType));
+            }
+            catch (Exception ex)
+            {
+                // 로그 기록 실패는 프로그램 실행에 영향을 주지 않도록 처리
+                Console.WriteLine($"사용자 활동 로그 기록 실패: {ex.Message}");
+            }
+        }
+
         public void Dispose()
         {
             if (_disposed) return;

@@ -537,6 +537,10 @@ namespace DBP_team
 
         private void btnLogout_Click(object sender, EventArgs e)
         {
+            // --- 로그아웃 로그 기록 추가 ---
+            DBManager.LogUserActivity(_userId, "LOGOUT");
+            // --------------------------
+
             AppSession.CurrentUser = null;
 
             Properties.Settings.Default.AutoLogin = false;
