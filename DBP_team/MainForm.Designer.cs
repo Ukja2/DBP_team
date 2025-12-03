@@ -38,13 +38,15 @@
             this.labelName = new System.Windows.Forms.Label();
             this.btnSelfChat = new System.Windows.Forms.Button();
             this.btnProfile = new System.Windows.Forms.Button();
+            this.btnLogout = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // btnOpenLogin
             // 
-            this.btnOpenLogin.Location = new System.Drawing.Point(216, 18);
+            this.btnOpenLogin.Location = new System.Drawing.Point(247, 22);
+            this.btnOpenLogin.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.btnOpenLogin.Name = "btnOpenLogin";
-            this.btnOpenLogin.Size = new System.Drawing.Size(70, 34);
+            this.btnOpenLogin.Size = new System.Drawing.Size(80, 42);
             this.btnOpenLogin.TabIndex = 5;
             this.btnOpenLogin.Text = "로그인";
             this.btnOpenLogin.UseVisualStyleBackColor = true;
@@ -52,9 +54,10 @@
             // 
             // treeViewUser
             // 
-            this.treeViewUser.Location = new System.Drawing.Point(34, 301);
+            this.treeViewUser.Location = new System.Drawing.Point(39, 376);
+            this.treeViewUser.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.treeViewUser.Name = "treeViewUser";
-            this.treeViewUser.Size = new System.Drawing.Size(394, 253);
+            this.treeViewUser.Size = new System.Drawing.Size(450, 315);
             this.treeViewUser.TabIndex = 0;
             // 
             // listViewRecent
@@ -65,9 +68,10 @@
             this.colTime});
             this.listViewRecent.FullRowSelect = true;
             this.listViewRecent.HideSelection = false;
-            this.listViewRecent.Location = new System.Drawing.Point(34, 115);
+            this.listViewRecent.Location = new System.Drawing.Point(39, 144);
+            this.listViewRecent.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.listViewRecent.Name = "listViewRecent";
-            this.listViewRecent.Size = new System.Drawing.Size(394, 180);
+            this.listViewRecent.Size = new System.Drawing.Size(450, 224);
             this.listViewRecent.TabIndex = 3;
             this.listViewRecent.UseCompatibleStateImageBehavior = false;
             this.listViewRecent.View = System.Windows.Forms.View.Details;
@@ -92,45 +96,59 @@
             // labelCompany
             // 
             this.labelCompany.AutoSize = true;
-            this.labelCompany.Location = new System.Drawing.Point(32, 18);
+            this.labelCompany.Location = new System.Drawing.Point(37, 22);
             this.labelCompany.Name = "labelCompany";
-            this.labelCompany.Size = new System.Drawing.Size(58, 12);
+            this.labelCompany.Size = new System.Drawing.Size(67, 15);
             this.labelCompany.TabIndex = 1;
             this.labelCompany.Text = "company";
             // 
             // labelName
             // 
             this.labelName.AutoSize = true;
-            this.labelName.Location = new System.Drawing.Point(32, 40);
+            this.labelName.Location = new System.Drawing.Point(37, 50);
             this.labelName.Name = "labelName";
-            this.labelName.Size = new System.Drawing.Size(30, 12);
+            this.labelName.Size = new System.Drawing.Size(35, 15);
             this.labelName.TabIndex = 2;
             this.labelName.Text = "user";
             // 
             // btnSelfChat
             // 
-            this.btnSelfChat.Location = new System.Drawing.Point(34, 65);
+            this.btnSelfChat.Location = new System.Drawing.Point(39, 81);
+            this.btnSelfChat.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.btnSelfChat.Name = "btnSelfChat";
-            this.btnSelfChat.Size = new System.Drawing.Size(83, 23);
+            this.btnSelfChat.Size = new System.Drawing.Size(95, 29);
             this.btnSelfChat.TabIndex = 3;
             this.btnSelfChat.Text = "나와의 채팅";
             this.btnSelfChat.UseVisualStyleBackColor = true;
             // 
             // btnProfile
             // 
-            this.btnProfile.Location = new System.Drawing.Point(292, 18);
+            this.btnProfile.Location = new System.Drawing.Point(334, 22);
+            this.btnProfile.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.btnProfile.Name = "btnProfile";
-            this.btnProfile.Size = new System.Drawing.Size(50, 34);
+            this.btnProfile.Size = new System.Drawing.Size(57, 42);
             this.btnProfile.TabIndex = 4;
             this.btnProfile.Text = "프로필";
             this.btnProfile.UseVisualStyleBackColor = true;
             this.btnProfile.Click += new System.EventHandler(this.button1_Click);
             // 
+            // btnLogout
+            // 
+            this.btnLogout.Location = new System.Drawing.Point(247, 74);
+            this.btnLogout.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.btnLogout.Name = "btnLogout";
+            this.btnLogout.Size = new System.Drawing.Size(80, 42);
+            this.btnLogout.TabIndex = 6;
+            this.btnLogout.Text = "로그아웃";
+            this.btnLogout.UseVisualStyleBackColor = true;
+            this.btnLogout.Click += new System.EventHandler(this.btnLogout_Click);
+            // 
             // MainForm
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 12F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(477, 665);
+            this.ClientSize = new System.Drawing.Size(545, 831);
+            this.Controls.Add(this.btnLogout);
             this.Controls.Add(this.btnProfile);
             this.Controls.Add(this.btnOpenLogin);
             this.Controls.Add(this.btnSelfChat);
@@ -138,6 +156,7 @@
             this.Controls.Add(this.labelCompany);
             this.Controls.Add(this.listViewRecent);
             this.Controls.Add(this.treeViewUser);
+            this.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.Name = "MainForm";
             this.Text = "MainForm";
             this.Load += new System.EventHandler(this.MainForm_Load);
@@ -158,5 +177,6 @@
         private System.Windows.Forms.Button btnSelfChat;
         private System.Windows.Forms.Button btnProfile;
         private System.Windows.Forms.Button btnOpenLogin;
+        private System.Windows.Forms.Button btnLogout;
     }
 }

@@ -530,5 +530,19 @@ namespace DBP_team
         {
 
         }
+
+        private void btnLogout_Click(object sender, EventArgs e)
+        {
+            AppSession.CurrentUser = null;
+
+            Properties.Settings.Default.AutoLogin = false;
+            Properties.Settings.Default.Save();
+
+            var login = new Loginform();
+            login.StartPosition = FormStartPosition.CenterScreen;
+            login.Show();
+
+            this.Close();
+        }
     }
 }

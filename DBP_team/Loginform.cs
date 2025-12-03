@@ -173,7 +173,6 @@ namespace DBP_team
                 }
 
                 next.StartPosition = FormStartPosition.CenterScreen;
-                next.FormClosed += (s, args) => this.Close();
                 this.Hide();
                 next.Show();
             }
