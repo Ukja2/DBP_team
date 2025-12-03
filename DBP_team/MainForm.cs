@@ -85,6 +85,7 @@ namespace DBP_team
 
             LoadCompanyTree();
             LoadRecentChats();
+            LoadFavorites(); // 즐겨찾기 로드 호출 추가
 
             // start polling for new incoming messages
             StartPolling();
@@ -116,6 +117,7 @@ namespace DBP_team
                 UpdateSelfHeaderDisplay();
                 LoadCompanyTree();
                 LoadRecentChats();
+                LoadFavorites(); // 즐겨찾기 로드 호출 추가
 
                 // start polling for new messages
                 StartPolling();
@@ -202,6 +204,7 @@ namespace DBP_team
             // 프로필 변경 후 트리/최근 목록 새로고침하여 반영
             LoadCompanyTree();
             LoadRecentChats();
+            LoadFavorites(); // 즐겨찾기 목록도 새로고침
         }
 
         // 기존 LoadCompanyTree() 메서드 수정: 로그인 사용자는 노드에 추가하지 않음
@@ -543,6 +546,138 @@ namespace DBP_team
             login.Show();
 
             this.Close();
+        }
+
+        private void LoadFavorites()
+        {
+            if (lvFavorites == null) return;
+            lvFavorites.Items.Clear();
+            if (_userId <= 0) return;
+
+            const string sql = @"
+                SELECT u.id AS user_id, COALESCE(u.full_name, u.email) AS display_name, d.name AS department_name
+                FROM users u
+                INNER JOIN favorites f ON f.target_id = u.id
+                LEFT JOIN departments d ON d.id = u.department_id
+                WHERE f.user_id = @userId
+                ORDER BY display_name;";
+
+            try
+            {
+                var dt = DBManager.Instance.ExecuteDataTable(sql, new MySqlParameter("@userId", _userId));
+                if (dt == null) return;
+                foreach (DataRow row in dt.Rows)
+                {
+                    int userId = Convert.ToInt32(row["user_id"]);
+                    string name = row["display_name"]?.ToString() ?? string.Empty;
+                    string dept = row["department_name"]?.ToString() ?? string.Empty;
+
+                    // Apply MultiProfile display if available
+                    var mpName = MultiProfileService.GetDisplayNameForViewer(userId, _userId);
+                    if (!string.IsNullOrWhiteSpace(mpName)) name = mpName;
+
+                    var item = new ListViewItem(name) { Tag = userId };
+                    item.ToolTipText = dept;
+                    lvFavorites.Items.Add(item);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("즐겨찾기 로드 중 오류: " + ex.Message, "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void FavoriteSelectedDepartmentNode(object sender, EventArgs e)
+        {
+            var node = treeViewUser.SelectedNode;
+            if (node == null || node.Tag == null) return;
+
+            // Expect tag like "user:123" or an int id. Only users can be favorited.
+            if (!TryGetUserIdFromNodeTag(node.Tag, out int targetUserId))
+            {
+                MessageBox.Show("사용자만 즐겨찾기에 추가할 수 있습니다.", "알림", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+            if (_userId <= 0) return;
+
+            const string sql = @"
+                INSERT INTO favorites (user_id, target_id)
+                VALUES (@userId, @targetId)
+                ON DUPLICATE KEY UPDATE target_id = target_id;";
+
+            try
+            {
+                DBManager.Instance.ExecuteNonQuery(sql,
+                    new MySqlParameter("@userId", _userId),
+                    new MySqlParameter("@targetId", targetUserId));
+                LoadFavorites();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("즐겨찾기 추가 중 오류: " + ex.Message, "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void UnfavoriteSelected(object sender, EventArgs e)
+        {
+            if (lvFavorites == null || lvFavorites.SelectedItems.Count == 0) return;
+            var item = lvFavorites.SelectedItems[0];
+            if (!(item.Tag is int targetUserId)) return;
+            if (_userId <= 0) return;
+
+            const string sql = @"DELETE FROM favorites WHERE user_id = @userId AND target_id = @targetId";
+            try
+            {
+                DBManager.Instance.ExecuteNonQuery(sql,
+                    new MySqlParameter("@userId", _userId),
+                    new MySqlParameter("@targetId", targetUserId));
+                LoadFavorites();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("즐겨찾기 해제 중 오류: " + ex.Message, "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void OpenChatForSelectedFavorite(object sender, EventArgs e)
+        {
+            if (lvFavorites == null || lvFavorites.SelectedItems.Count == 0) return;
+            var item = lvFavorites.SelectedItems[0];
+            if (!(item.Tag is int targetUserId)) return;
+
+            var displayName = MultiProfileService.GetDisplayNameForViewer(targetUserId, _userId);
+            if (string.IsNullOrWhiteSpace(displayName)) displayName = item.Text;
+
+            var chat = new ChatForm(_userId, targetUserId, displayName);
+            chat.StartPosition = FormStartPosition.CenterParent;
+            chat.Show(this);
+        }
+
+        private bool TryGetUserIdFromNodeTag(object tag, out int userId)
+        {
+            // Accept formats: int, "user:123", "123"
+            userId = 0;
+            if (tag is int i)
+            {
+                userId = i; return true;
+            }
+            if (tag is string s)
+            {
+                // designer code sets like "user:123"; support plain numeric too
+                if (s.StartsWith("user:", StringComparison.OrdinalIgnoreCase))
+                {
+                    var parts = s.Split(':');
+                    if (parts.Length == 2 && int.TryParse(parts[1], out var parsed))
+                    {
+                        userId = parsed; return true;
+                    }
+                }
+                if (int.TryParse(s, out var parsedNum))
+                {
+                    userId = parsedNum; return true;
+                }
+            }
+            return false;
         }
     }
 }
