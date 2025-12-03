@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Data;
 using System.Drawing;
+using System.Linq;
 using System.Windows.Forms;
 using MySql.Data.MySqlClient;
 using DBP_team.Models;
@@ -328,7 +329,7 @@ namespace DBP_team
                     "  SELECT CASE WHEN sender_id = @me THEN receiver_id ELSE sender_id END AS other_id, MAX(created_at) AS last_at " +
                     "  FROM chat WHERE sender_id = @me OR receiver_id = @me GROUP BY other_id" +
                     ") c2 ON u.id = c2.other_id " +
-                    "LEFT JOIN chat c ON ((c.sender_id = @me AND c.receiver_id = u.id) OR (c.sender_id = u.id && c.receiver_id = @me)) AND c.created_at = c2.last_at " +
+                    "LEFT JOIN chat c ON ((c.sender_id = @me && c.receiver_id = u.id) OR (c.sender_id = u.id && c.receiver_id = @me)) AND c.created_at = c2.last_at " +
                     "ORDER BY c2.last_at DESC",
                     new MySqlParameter("@me", _userId));
 
@@ -667,17 +668,99 @@ namespace DBP_team
                 if (s.StartsWith("user:", StringComparison.OrdinalIgnoreCase))
                 {
                     var parts = s.Split(':');
-                    if (parts.Length == 2 && int.TryParse(parts[1], out var parsed))
-                    {
-                        userId = parsed; return true;
-                    }
+                    if (parts.Length == 2 && int.TryParse(parts[1], out userId)) return true;
                 }
-                if (int.TryParse(s, out var parsedNum))
+                else
                 {
-                    userId = parsedNum; return true;
+                    return int.TryParse(s, out userId);
                 }
             }
             return false;
+        }
+
+        // --- 검색 로직 및 이벤트 핸들러 추가 ---
+
+        private void SearchUsers()
+        {
+            // txtSearch 컨트롤이 디자이너에 추가되어 있어야 합니다.
+            if (this.Controls.Find("txtSearch", true).FirstOrDefault() is TextBox txtSearch)
+            {
+                string keyword = txtSearch.Text.Trim();
+
+                if (string.IsNullOrEmpty(keyword))
+                {
+                    LoadCompanyTree(); // 키워드가 없으면 전체 조직도 로드
+                    return;
+                }
+
+                treeViewUser.BeginUpdate();
+                treeViewUser.Nodes.Clear();
+
+                var searchRootNode = new TreeNode($"'{keyword}' 검색 결과");
+                treeViewUser.Nodes.Add(searchRootNode);
+
+                // --- SQL 쿼리 수정 ---
+                const string sql = @"
+                    SELECT u.id, u.full_name, u.email, d.name AS department_name
+                    FROM users u
+                    LEFT JOIN departments d ON u.department_id = d.id
+                    WHERE CAST(u.id AS CHAR) LIKE @keyword_wildcard
+                       OR u.full_name LIKE @keyword_wildcard
+                       OR u.email LIKE @keyword_wildcard
+                       OR d.name LIKE @keyword_wildcard
+                    ORDER BY d.name, u.full_name;";
+
+                try
+                {
+                    var dt = DBManager.Instance.ExecuteDataTable(sql, new MySqlParameter("@keyword_wildcard", $"%{keyword}%"));
+
+                    if (dt != null && dt.Rows.Count > 0)
+                    {
+                        foreach (DataRow row in dt.Rows)
+                        {
+                            int uid = Convert.ToInt32(row["id"]);
+                            if (uid == _userId) continue;
+
+                            string baseDisplay = row["full_name"]?.ToString() ?? row["email"]?.ToString() ?? "이름 없음";
+                            var mpDisplay = MultiProfileService.GetDisplayNameForViewer(uid, _userId);
+                            if (!string.IsNullOrWhiteSpace(mpDisplay)) baseDisplay = mpDisplay;
+
+                            string deptName = row["department_name"]?.ToString();
+                            string nodeText = string.IsNullOrEmpty(deptName) ? baseDisplay : $"{baseDisplay} ({deptName})";
+
+                            var userNode = new TreeNode(nodeText) { Tag = $"user:{uid}" };
+                            searchRootNode.Nodes.Add(userNode);
+                        }
+                    }
+                    else
+                    {
+                        searchRootNode.Nodes.Add(new TreeNode("검색 결과가 없습니다."));
+                    }
+                    searchRootNode.Expand();
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("검색 중 오류 발생: " + ex.Message, "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+                finally
+                {
+                    treeViewUser.EndUpdate();
+                }
+            }
+        }
+
+        private void btnSearch_Click(object sender, EventArgs e)
+        {
+            SearchUsers();
+        }
+
+        private void txtSearch_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Enter)
+            {
+                e.SuppressKeyPress = true; // 클릭 소리 방지
+                SearchUsers();
+            }
         }
     }
 }
