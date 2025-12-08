@@ -167,6 +167,9 @@
     <Compile Include="UI\MultiProfilesForm.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="UI\TeamAddDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <EmbeddedResource Include="AddressSearchForm.resx">
       <DependentUpon>AddressSearchForm.cs</DependentUpon>
     </EmbeddedResource>

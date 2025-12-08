@@ -41,6 +41,7 @@ namespace DBP_team
             this.lblDeptName = new System.Windows.Forms.Label();
             this._txtDeptName = new System.Windows.Forms.TextBox();
             this._btnDeptAdd = new System.Windows.Forms.Button();
+            this._btnTeamAdd = new System.Windows.Forms.Button();
             this._btnDeptUpdate = new System.Windows.Forms.Button();
             this.lblDeptSearch = new System.Windows.Forms.Label();
             this._txtDeptSearch = new System.Windows.Forms.TextBox();
@@ -77,15 +78,12 @@ namespace DBP_team
             this.txtSearchUser = new System.Windows.Forms.TextBox();
             this.btnSearchLog = new System.Windows.Forms.Button();
             this.pagePermission = new System.Windows.Forms.TabPage();
-            this.label1 = new System.Windows.Forms.Label();
-            this.dgvUsers = new System.Windows.Forms.DataGridView();
-            this.label2 = new System.Windows.Forms.Label();
-            this.chkAllEmployees = new System.Windows.Forms.CheckBox();
-            this.clbDepartments = new System.Windows.Forms.CheckedListBox();
-            this.btnSavePermission = new System.Windows.Forms.Button();
-            this.btnResetPermission = new System.Windows.Forms.Button();
-            this.lblSelectedUser = new System.Windows.Forms.Label();
-            this._gridLogs = new System.Windows.Forms.DataGridView();
+            this._tvVisibility = new System.Windows.Forms.TreeView();
+            this._pnlPermissionTop = new System.Windows.Forms.FlowLayoutPanel();
+            this.labelViewer = new System.Windows.Forms.Label();
+            this._cboViewer = new System.Windows.Forms.ComboBox();
+            this._btnPermSave = new System.Windows.Forms.Button();
+            this._btnPermReset = new System.Windows.Forms.Button();
             this.pageChatBan = new System.Windows.Forms.TabPage();
             this._pnlBanTop = new System.Windows.Forms.FlowLayoutPanel();
             this.labelUserA = new System.Windows.Forms.Label();
@@ -110,7 +108,6 @@ namespace DBP_team
             ((System.ComponentModel.ISupportInitialize)(this._gridLogs)).BeginInit();
             this.pnlSearch.SuspendLayout();
             this.pagePermission.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.dgvUsers)).BeginInit();
             this.pageChatBan.SuspendLayout();
             this._pnlBanTop.SuspendLayout();
             this.SuspendLayout();
@@ -166,6 +163,7 @@ namespace DBP_team
             this.pnlDeptTop.Controls.Add(this.lblDeptName);
             this.pnlDeptTop.Controls.Add(this._txtDeptName);
             this.pnlDeptTop.Controls.Add(this._btnDeptAdd);
+            this.pnlDeptTop.Controls.Add(this._btnTeamAdd);
             this.pnlDeptTop.Controls.Add(this._btnDeptUpdate);
             this.pnlDeptTop.Controls.Add(this.lblDeptSearch);
             this.pnlDeptTop.Controls.Add(this._txtDeptSearch);
@@ -186,6 +184,7 @@ namespace DBP_team
             this.lblDeptName.Size = new System.Drawing.Size(54, 20);
             this.lblDeptName.TabIndex = 0;
             this.lblDeptName.Text = "부서명";
+            this.lblDeptName.Visible = true;
             // 
             // _txtDeptName
             // 
@@ -193,15 +192,27 @@ namespace DBP_team
             this._txtDeptName.Name = "_txtDeptName";
             this._txtDeptName.Size = new System.Drawing.Size(220, 27);
             this._txtDeptName.TabIndex = 1;
+            this._txtDeptName.Visible = true;
             // 
             // _btnDeptAdd
             // 
-            this._btnDeptAdd.Location = new System.Drawing.Point(290, 7);
+            this._btnDeptAdd.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this._btnDeptAdd.Location = new System.Drawing.Point(830, 7);
             this._btnDeptAdd.Name = "_btnDeptAdd";
             this._btnDeptAdd.Size = new System.Drawing.Size(80, 25);
             this._btnDeptAdd.TabIndex = 2;
-            this._btnDeptAdd.Text = "추가";
+            this._btnDeptAdd.Text = "부서 추가";
             this._btnDeptAdd.Click += new System.EventHandler(this.DeptAdd_Click);
+            // 
+            // _btnTeamAdd
+            // 
+            this._btnTeamAdd.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this._btnTeamAdd.Location = new System.Drawing.Point(915, 7);
+            this._btnTeamAdd.Name = "_btnTeamAdd";
+            this._btnTeamAdd.Size = new System.Drawing.Size(80, 25);
+            this._btnTeamAdd.TabIndex = 9;
+            this._btnTeamAdd.Text = "팀 추가";
+            this._btnTeamAdd.Click += new System.EventHandler(this.TeamAdd_Click);
             // 
             // _btnDeptUpdate
             // 
@@ -233,7 +244,7 @@ namespace DBP_team
             // 
             this._btnDeptSearch.Location = new System.Drawing.Point(785, 7);
             this._btnDeptSearch.Name = "_btnDeptSearch";
-            this._btnDeptSearch.Size = new System.Drawing.Size(80, 25);
+            this._btnDeptSearch.Size = new System.Drawing.Size(40, 25);
             this._btnDeptSearch.TabIndex = 6;
             this._btnDeptSearch.Text = "검색";
             this._btnDeptSearch.Click += new System.EventHandler(this.DeptSearch_Click);
@@ -580,14 +591,9 @@ namespace DBP_team
             // 
             // pagePermission
             // 
-            this.pagePermission.Controls.Add(this.lblSelectedUser);
-            this.pagePermission.Controls.Add(this.btnResetPermission);
-            this.pagePermission.Controls.Add(this.btnSavePermission);
-            this.pagePermission.Controls.Add(this.clbDepartments);
-            this.pagePermission.Controls.Add(this.chkAllEmployees);
-            this.pagePermission.Controls.Add(this.label2);
-            this.pagePermission.Controls.Add(this.dgvUsers);
-            this.pagePermission.Controls.Add(this.label1);
+            this.pagePermission.Controls.Clear();
+            this.pagePermission.Controls.Add(this._tvVisibility);
+            this.pagePermission.Controls.Add(this._pnlPermissionTop);
             this.pagePermission.Location = new System.Drawing.Point(4, 29);
             this.pagePermission.Name = "pagePermission";
             this.pagePermission.Padding = new System.Windows.Forms.Padding(3);
@@ -596,83 +602,54 @@ namespace DBP_team
             this.pagePermission.Text = "권한 설정";
             this.pagePermission.UseVisualStyleBackColor = true;
             // 
-            // label1
+            // _tvVisibility
             // 
-            this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(181, 20);
-            this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(89, 20);
-            this.label1.TabIndex = 0;
-            this.label1.Text = "사용자 선택";
+            this._tvVisibility.CheckBoxes = true;
+            this._tvVisibility.Dock = System.Windows.Forms.DockStyle.Fill;
+            this._tvVisibility.Location = new System.Drawing.Point(3, 63);
+            this._tvVisibility.Name = "_tvVisibility";
+            this._tvVisibility.Size = new System.Drawing.Size(1010, 621);
+            this._tvVisibility.TabIndex = 1;
+            this._tvVisibility.AfterCheck += new System.Windows.Forms.TreeViewEventHandler(this.tvVisibility_AfterCheck);
             // 
-            // dgvUsers
+            // _pnlPermissionTop
             // 
-            this.dgvUsers.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            this.dgvUsers.Location = new System.Drawing.Point(27, 43);
-            this.dgvUsers.Name = "dgvUsers";
-            this.dgvUsers.RowHeadersWidth = 51;
-            this.dgvUsers.RowTemplate.Height = 27;
-            this.dgvUsers.Size = new System.Drawing.Size(431, 194);
-            this.dgvUsers.TabIndex = 1;
-            this.dgvUsers.CellClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.dgvUsers_CellContentClick);
-            this.dgvUsers.CellContentClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.dgvUsers_CellContentClick);
+            this._pnlPermissionTop.Dock = System.Windows.Forms.DockStyle.Top;
+            this._pnlPermissionTop.Padding = new System.Windows.Forms.Padding(8);
+            this._pnlPermissionTop.Height = 60;
+            this._pnlPermissionTop.BackColor = System.Drawing.Color.FromArgb(250, 250, 250);
+            this._pnlPermissionTop.Controls.Add(this.labelViewer);
+            this._pnlPermissionTop.Controls.Add(this._cboViewer);
+            this._pnlPermissionTop.Controls.Add(this._btnPermSave);
+            this._pnlPermissionTop.Controls.Add(this._btnPermReset);
             // 
-            // label2
+            // labelViewer
             // 
-            this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(733, 20);
-            this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(74, 20);
-            this.label2.TabIndex = 2;
-            this.label2.Text = "권한 설정";
+            this.labelViewer.AutoSize = true;
+            this.labelViewer.Text = "사용자";
+            this.labelViewer.Margin = new System.Windows.Forms.Padding(3, 8, 3, 3);
             // 
-            // chkAllEmployees
+            // _cboViewer
             // 
-            this.chkAllEmployees.AutoSize = true;
-            this.chkAllEmployees.Location = new System.Drawing.Point(830, 56);
-            this.chkAllEmployees.Name = "chkAllEmployees";
-            this.chkAllEmployees.Size = new System.Drawing.Size(131, 24);
-            this.chkAllEmployees.TabIndex = 0;
-            this.chkAllEmployees.Text = "모든 직원 보기";
-            this.chkAllEmployees.UseVisualStyleBackColor = true;
-            this.chkAllEmployees.CheckedChanged += new System.EventHandler(this.chkAllEmployees_CheckedChanged);
+            this._cboViewer.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this._cboViewer.Width = 240;
+            this._cboViewer.SelectedIndexChanged += new System.EventHandler(this.cboViewer_SelectedIndexChanged);
             // 
-            // clbDepartments
+            // _btnPermSave
             // 
-            this.clbDepartments.FormattingEnabled = true;
-            this.clbDepartments.Location = new System.Drawing.Point(574, 79);
-            this.clbDepartments.Name = "clbDepartments";
-            this.clbDepartments.Size = new System.Drawing.Size(387, 158);
-            this.clbDepartments.TabIndex = 4;
+            this._btnPermSave.Text = "저장";
+            this._btnPermSave.Width = 100;
+            this._btnPermSave.Height = 25;
+            this._btnPermSave.Margin = new System.Windows.Forms.Padding(15, 6, 3, 3);
+            this._btnPermSave.Click += new System.EventHandler(this.btnPermSave_Click);
             // 
-            // btnSavePermission
+            // _btnPermReset
             // 
-            this.btnSavePermission.Location = new System.Drawing.Point(657, 284);
-            this.btnSavePermission.Name = "btnSavePermission";
-            this.btnSavePermission.Size = new System.Drawing.Size(82, 33);
-            this.btnSavePermission.TabIndex = 5;
-            this.btnSavePermission.Text = "저장";
-            this.btnSavePermission.UseVisualStyleBackColor = true;
-            this.btnSavePermission.Click += new System.EventHandler(this.btnSavePermission_Click);
-            // 
-            // btnResetPermission
-            // 
-            this.btnResetPermission.Location = new System.Drawing.Point(806, 284);
-            this.btnResetPermission.Name = "btnResetPermission";
-            this.btnResetPermission.Size = new System.Drawing.Size(82, 33);
-            this.btnResetPermission.TabIndex = 6;
-            this.btnResetPermission.Text = "초기화";
-            this.btnResetPermission.UseVisualStyleBackColor = true;
-            this.btnResetPermission.Click += new System.EventHandler(this.btnResetPermission_Click);
-            // 
-            // lblSelectedUser
-            // 
-            this.lblSelectedUser.AutoSize = true;
-            this.lblSelectedUser.Location = new System.Drawing.Point(570, 240);
-            this.lblSelectedUser.Name = "lblSelectedUser";
-            this.lblSelectedUser.Size = new System.Drawing.Size(142, 20);
-            this.lblSelectedUser.TabIndex = 7;
-            this.lblSelectedUser.Text = "선택된 사용자: 없음";
+            this._btnPermReset.Text = "초기화";
+            this._btnPermReset.Width = 100;
+            this._btnPermReset.Height = 25;
+            this._btnPermReset.Margin = new System.Windows.Forms.Padding(8, 6, 3, 3);
+            this._btnPermReset.Click += new System.EventHandler(this.btnPermReset_Click);
             // 
             // pageChatBan
             // 
@@ -768,9 +745,6 @@ namespace DBP_team
             this.pnlSearch.ResumeLayout(false);
             this.pnlSearch.PerformLayout();
             this.pagePermission.ResumeLayout(false);
-            this.pagePermission.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.dgvUsers)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this._gridLogs)).EndInit();
             this.pageChatBan.ResumeLayout(false);
             this._pnlBanTop.ResumeLayout(false);
             this._pnlBanTop.PerformLayout();
@@ -786,6 +760,7 @@ namespace DBP_team
         private System.Windows.Forms.Label lblDeptName;
         private System.Windows.Forms.TextBox _txtDeptName;
         private System.Windows.Forms.Button _btnDeptAdd;
+        private System.Windows.Forms.Button _btnTeamAdd;
         private System.Windows.Forms.Button _btnDeptUpdate;
         private System.Windows.Forms.Label lblDeptSearch;
         private System.Windows.Forms.TextBox _txtDeptSearch;
@@ -822,15 +797,13 @@ namespace DBP_team
         private System.Windows.Forms.TextBox txtSearchUser;
         private System.Windows.Forms.Button btnSearchLog;
         private System.Windows.Forms.DataGridView _gridLogs;
-        private TabPage pagePermission;
-        private Label label2;
-        private DataGridView dgvUsers;
-        private Label label1;
-        private CheckBox chkAllEmployees;
-        private Button btnResetPermission;
-        private Button btnSavePermission;
-        private CheckedListBox clbDepartments;
-        private Label lblSelectedUser;
+        private System.Windows.Forms.TabPage pagePermission;
+        private System.Windows.Forms.TreeView _tvVisibility;
+        private System.Windows.Forms.FlowLayoutPanel _pnlPermissionTop;
+        private System.Windows.Forms.Label labelViewer;
+        private System.Windows.Forms.ComboBox _cboViewer;
+        private System.Windows.Forms.Button _btnPermSave;
+        private System.Windows.Forms.Button _btnPermReset;
         private System.Windows.Forms.TabPage pageChatBan;
         private System.Windows.Forms.FlowLayoutPanel _pnlBanTop;
         private System.Windows.Forms.ComboBox _cbUser1;

@@ -154,17 +154,22 @@ namespace DBP_team.Controls
 
             // lblTime 위치 및 폭: 말풍선 내부 아래, 폭은 panelBubble 내부폭으로 맞추고 오른쪽 정렬
             int innerWidth = Math.Max(1, panelBubble.ClientSize.Width - panelBubble.Padding.Horizontal);
-            lblTime.Size = new Size(innerWidth, lblTime.Height);
-            lblTime.Location = new Point(panelBubble.Padding.Left, panelBubble.Padding.Top + lblMessage.Height + 4);
+            int timeTop = panelBubble.Padding.Top + lblMessage.Height + 4;
 
-            // 읽음 라벨은 좌측 하단, 시간과 같은 y에 두되 좌측 정렬
-            lblRead.Location = new Point(panelBubble.Padding.Left, lblTime.Top);
+            // place read label to the right of time, on the same line, right aligned
+            int readWidth = lblRead.Visible ? lblRead.PreferredWidth : 0;
+            lblRead.Location = new Point(panelBubble.Padding.Left + innerWidth - readWidth, timeTop);
+
+            int timeWidth = Math.Max(0, innerWidth - (readWidth > 0 ? (readWidth + 6) : 0));
+            lblTime.Size = new Size(timeWidth, lblTime.Height);
+            lblTime.Location = new Point(panelBubble.Padding.Left, timeTop);
 
             // btnDownload 위치: 시간 왼쪽에 배치
             btnDownload.Location = new Point(panelBubble.Padding.Left, lblTime.Top + lblTime.Height + 4);
 
             // panelBubble 높이 자동 확대
-            panelBubble.Height = panelBubble.Padding.Vertical + lblMessage.Height + lblTime.Height + (btnDownload.Visible ? btnDownload.Height + 6 : 4);
+            int extra = btnDownload.Visible ? (btnDownload.Height + 6) : 4;
+            panelBubble.Height = panelBubble.Padding.Vertical + lblMessage.Height + lblTime.Height + extra;
 
             // 컨트롤 높이
             this.Height = panelBubble.Height + 6;
@@ -296,6 +301,8 @@ namespace DBP_team.Controls
         public void SetRead(bool isRead)
         {
             lblRead.Text = isRead ? "읽음" : string.Empty;
+            lblRead.Visible = isRead;
+            this.PerformLayout();
         }
 
         public void SetFile(int fileId, string fileName)

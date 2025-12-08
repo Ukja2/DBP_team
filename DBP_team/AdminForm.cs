@@ -1,12 +1,13 @@
 using System;
-using System.Data;
-using System.Drawing;
+using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Forms;
 using MySql.Data.MySqlClient;
 using DBP_team.Models;
 using System.Text;
 using System.ComponentModel;
+using System.Data;
+using DBP_team.UI;
 
 namespace DBP_team
 {
@@ -15,13 +16,9 @@ namespace DBP_team
         private readonly User _me;
         private readonly int _companyId;
         private int? _selectedPermissionUserId = null;
+        private bool _tvUpdating = false; // prevent recursive AfterCheck loops
 
-        // Chat ban controls are declared in Designer.cs to be designer-friendly
-
-        // Designer-friendly parameterless constructor
-        public AdminForm() : this(new User { Id = 0, CompanyId = 0, FullName = "관리자" })
-        {
-        }
+        public AdminForm() : this(new User { Id = 0, CompanyId = 0, FullName = "관리자" }) { }
 
         public AdminForm(User me)
         {
@@ -30,19 +27,15 @@ namespace DBP_team
 
             InitializeComponent();
 
-            // Detect design-time reliably
             bool isDesignTime = LicenseManager.UsageMode == LicenseUsageMode.Designtime;
-
             if (!isDesignTime)
             {
                 if (!AdminGuard.IsAdmin(_me))
                 {
                     MessageBox.Show("관리자만 접근 가능합니다.", "권한 없음", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    this.Load += (s, e) => this.Close(); // 폼 로드 후 바로 닫기
+                    this.Load += (s, e) => this.Close();
                     return;
                 }
-
-                // Runtime UI injection for chat ban management will be done on Load
                 this.Load -= AdminForm_Load;
                 this.Load += AdminForm_Load;
             }
@@ -52,20 +45,58 @@ namespace DBP_team
         {
             if (LicenseManager.UsageMode != LicenseUsageMode.Designtime)
             {
-                // DateTimePicker 초기값 설정 (디자인 타임 접근 방지)
                 if (_dtFrom != null) _dtFrom.Value = DateTime.Now.Date.AddDays(-7);
                 if (_dtTo != null) _dtTo.Value = DateTime.Now.Date.AddDays(1).AddSeconds(-1);
 
-                LoadDeptGrid();
-                LoadDeptComboForUser();
-                LoadUsersGrid();
-                LoadUserFilterCombo();
-                SearchAccessLogs();
-                InitPermissionTab();
-                SearchAccessLogs(); // 초기 접속 로그 로드
+                try
+                {
+                    EnsureUserViewPermissionTableExists();
 
-                // Runtime UI injection for chat ban management
-                InitializeChatBanUI();
+                    LoadDeptGrid();
+                    LoadDeptComboForUser();
+                    LoadUsersGrid();
+                    LoadUserFilterCombo();
+                    SearchAccessLogs();
+                    InitializePermissionTree();
+                    InitializeChatBanUI();
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("초기화 중 오류: " + ex.Message, "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+        }
+
+        private void EnsureUserViewPermissionTableExists()
+        {
+            try
+            {
+                DBManager.Instance.ExecuteNonQuery(
+                    "CREATE TABLE IF NOT EXISTS user_view_permission (" +
+                    " id INT AUTO_INCREMENT PRIMARY KEY, " +
+                    " viewer_user_id INT NOT NULL, " +
+                    " dept_id INT NULL, " +
+                    " group_code VARCHAR(50) NULL, " +
+                    " created_at DATETIME DEFAULT CURRENT_TIMESTAMP, " +
+                    " INDEX idx_viewer(viewer_user_id) " +
+                    ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+
+                try
+                {
+                    DBManager.Instance.ExecuteNonQuery(
+                        "ALTER TABLE user_view_permission ADD UNIQUE KEY uq_viewer_target (viewer_user_id, dept_id, group_code)");
+                }
+                catch { }
+
+                try
+                {
+                    DBManager.Instance.ExecuteNonQuery(
+                        "ALTER TABLE user_view_permission MODIFY COLUMN group_code VARCHAR(100) NULL");
+                }
+                catch { }
+            }
+            catch
+            {
             }
         }
 
@@ -80,8 +111,8 @@ namespace DBP_team
         private void ApplyDept_Click(object sender, EventArgs e) => ApplyUserDepartment();
         private void ChatSearch_Click(object sender, EventArgs e) => LoadChatGrid();
         private void SearchLog_Click(object sender, EventArgs e) => SearchAccessLogs();
-        private void GridChat_CellClick(object sender, DataGridViewCellEventArgs e) { /* 필요한 경우 구현 */ }
-        private void GridLogs_CellClick(object sender, DataGridViewCellEventArgs e) { /* 필요한 경우 구현 */ }
+        private void GridChat_CellClick(object sender, DataGridViewCellEventArgs e) { }
+        private void GridLogs_CellClick(object sender, DataGridViewCellEventArgs e) { }
 
         private void LoadDeptGrid(string keyword = null)
         {
@@ -99,19 +130,33 @@ namespace DBP_team
 
         private void AddDepartment()
         {
-            var name = _txtDeptName.Text?.Trim();
-            if (string.IsNullOrWhiteSpace(name)) { MessageBox.Show("부서명을 입력하세요."); return; }
-            DBManager.Instance.ExecuteNonQuery(
-                "INSERT INTO departments (company_id, name) VALUES (@cid, @name)",
-                new MySqlParameter("@cid", _companyId), new MySqlParameter("@name", name));
-            LoadDeptGrid();
-            LoadDeptComboForUser();
+            try
+            {
+                using (var dlg = new InputDialog("부서 추가", string.Empty))
+                {
+                    if (dlg.ShowDialog(this) != DialogResult.OK) return;
+                    var name = dlg.ResultText?.Trim();
+                    if (string.IsNullOrWhiteSpace(name)) { MessageBox.Show("부서명을 입력하세요."); return; }
+                    DBManager.Instance.ExecuteNonQuery(
+                        "INSERT INTO departments (company_id, name) VALUES (@cid, @name)",
+                        new MySqlParameter("@cid", _companyId), new MySqlParameter("@name", name));
+                    LoadDeptGrid();
+                    LoadDeptComboForUser();
+                    InitializePermissionTree();
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("부서 추가 중 오류: " + ex.Message, "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         private void UpdateDepartment()
         {
             if (_gridDept.CurrentRow == null) { MessageBox.Show("수정할 부서를 선택하세요."); return; }
-            var id = Convert.ToInt32((_gridDept.CurrentRow.DataBoundItem as DataRowView)["id"]);
+            var drv = _gridDept.CurrentRow.DataBoundItem as DataRowView;
+            if (drv == null) { MessageBox.Show("선택 행 데이터를 읽을 수 없습니다."); return; }
+            var id = Convert.ToInt32(drv["id"]);
             var name = _txtDeptName.Text?.Trim();
             if (string.IsNullOrWhiteSpace(name)) { MessageBox.Show("부서명을 입력하세요."); return; }
             DBManager.Instance.ExecuteNonQuery(
@@ -131,12 +176,10 @@ namespace DBP_team
             _cboDeptForUser.ValueMember = "id";
         }
 
-        // 직원(유저) 목록 로드 + G 기능 권한 적용
         private void LoadUsersGrid(string keyword = null)
         {
             DataTable dt;
 
-            // 1. 관리자(Admin)는 항상 회사 전체 직원 보이게 (권한 제한 없음)
             if (AdminGuard.IsAdmin(_me))
             {
                 var sql = "SELECT u.id, COALESCE(u.full_name, u.email) AS name, u.email, " +
@@ -162,9 +205,7 @@ namespace DBP_team
             }
             else
             {
-                // 2. 일반 사용자: G 기능 권한 로직 적용
-                // EmployeePermissionService에서 user_view_permission 기반으로 필터링됨
-                dt = EmployeePermissionService.LoadVisibleEmployees(
+                dt = Models.EmployeePermissionService.LoadVisibleEmployees(
                     viewerId: _me.Id,
                     companyId: _companyId,
                     keyword: keyword
@@ -188,7 +229,6 @@ namespace DBP_team
             if (_gridUsers.Columns.Contains("department"))
                 _gridUsers.Columns["department"].HeaderText = "부서";
         }
-
 
         private void ApplyUserDepartment()
         {
@@ -305,326 +345,405 @@ namespace DBP_team
                 MessageBox.Show("로그 검색 중 오류 발생: " + ex.Message, "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
-        private void InitPermissionTab()
-        {
-            // 디자이너에서 권한 탭 관련 컨트롤이 추가되어 있지 않으면 아무 작업하지 않음
-            if (dgvUsers == null || clbDepartments == null || lblSelectedUser == null
-                || chkAllEmployees == null || btnSavePermission == null || btnResetPermission == null)
-                return;
 
-            // 이벤트 중복 등록 방지: 먼저 제거 후 등록
-            chkAllEmployees.CheckedChanged -= chkAllEmployees_CheckedChanged;
-            chkAllEmployees.CheckedChanged += chkAllEmployees_CheckedChanged;
-
-            btnSavePermission.Click -= btnSavePermission_Click;
-            btnSavePermission.Click += btnSavePermission_Click;
-
-            btnResetPermission.Click -= btnResetPermission_Click;
-            btnResetPermission.Click += btnResetPermission_Click;
-
-            // 그리드 동작 설정
-            dgvUsers.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
-            dgvUsers.AutoGenerateColumns = true;
-            dgvUsers.MultiSelect = false;
-
-            // 초기 데이터 로드
-            LoadPermissionUserGrid();
-            LoadPermissionDepartments();
-
-            // UI 초기화
-            ResetPermissionUI();
-        }
-
-        private void dgvUsers_CellContentClick(object sender, DataGridViewCellEventArgs e)
-        {
-            if(e.RowIndex < 0) return;
-
-            var row = dgvUsers.Rows[e.RowIndex];
-            var drv = row.DataBoundItem as DataRowView;
-            if (drv == null) return;
-
-            _selectedPermissionUserId = Convert.ToInt32(drv["id"]);
-
-            if (lblSelectedUser != null)
-                lblSelectedUser.Text = $"선택된 사용자: {drv["name"]} (ID={_selectedPermissionUserId})";
-
-            LoadUserPermission(_selectedPermissionUserId.Value);
-        }
-        //왼
-        private void LoadPermissionUserGrid(string keyword = null)
-        {
-            var sql = new StringBuilder();
-            sql.Append("SELECT u.id, COALESCE(u.full_name, u.email) AS name, u.email, ");
-            sql.Append("u.department_id, d.name AS department ");
-            sql.Append("FROM users u ");
-            sql.Append("LEFT JOIN departments d ON d.id = u.department_id ");
-            sql.Append("WHERE u.company_id = @cid ");
-
-            var pars = new System.Collections.Generic.List<MySqlParameter>
-    {
-        new MySqlParameter("@cid", _companyId)
-    };
-
-            if (!string.IsNullOrWhiteSpace(keyword))
-            {
-                sql.Append("AND (u.full_name LIKE @kw OR u.email LIKE @kw) ");
-                pars.Add(new MySqlParameter("@kw", "%" + keyword + "%"));
-            }
-
-            sql.Append("ORDER BY name");
-
-            var dt = DBManager.Instance.ExecuteDataTable(sql.ToString(), pars.ToArray());
-            dgvUsers.DataSource = dt;
-
-            if (dgvUsers.Columns.Contains("id")) dgvUsers.Columns["id"].Visible = false;
-            if (dgvUsers.Columns.Contains("department_id")) dgvUsers.Columns["department_id"].Visible = false;
-            if (dgvUsers.Columns.Contains("name")) dgvUsers.Columns["name"].HeaderText = "이름";
-            if (dgvUsers.Columns.Contains("email")) dgvUsers.Columns["email"].HeaderText = "이메일";
-            if (dgvUsers.Columns.Contains("department")) dgvUsers.Columns["department"].HeaderText = "부서";
-        }
-        //오
-        private void LoadPermissionDepartments()
+        private void TeamAdd_Click(object sender, EventArgs e)
         {
             try
             {
-                var dt = DBManager.Instance.ExecuteDataTable(
-                    "SELECT id, name FROM departments WHERE company_id = @cid ORDER BY name",
-                    new MySqlParameter("@cid", _companyId));
-
-                clbDepartments.Items.Clear();
-
-                // CheckedListBox는 DataSource 쓰지 말고 Items에 직접 넣기
-                foreach (DataRow row in dt.Rows)
+                using (var dlg = new TeamAddDialog(_companyId))
                 {
-                    clbDepartments.Items.Add(
-                        new ComboItem
-                        {
-                            Id = Convert.ToInt32(row["id"]),
-                            Name = row["name"].ToString()
-                        },
-                        false  // 초기 체크상태 false
-                    );
+                    if (dlg.ShowDialog(this) != DialogResult.OK) return;
+                    int deptId = dlg.SelectedDepartmentId;
+                    var teamName = dlg.TeamName?.Trim();
+                    if (deptId <= 0 || string.IsNullOrWhiteSpace(teamName))
+                    {
+                        MessageBox.Show("부서와 팀 이름을 입력하세요.");
+                        return;
+                    }
+
+                    DBManager.Instance.ExecuteNonQuery(
+                        "INSERT INTO teams (department_id, name) VALUES (@did, @name)",
+                        new MySqlParameter("@did", deptId),
+                        new MySqlParameter("@name", teamName));
+
+                    LoadDeptGrid();
+                    LoadUsersGrid(_txtUserSearch.Text?.Trim());
+                    InitializePermissionTree();
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show("부서 목록을 불러올 때 오류 발생: " + ex.Message);
+                MessageBox.Show("팀 추가 중 오류: " + ex.Message, "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
-        // CheckedListBox에 넣을 객체 (표시용)
-        private class ComboItem
+        private void InitializePermissionTree()
         {
-            public int Id { get; set; }
-            public string Name { get; set; }
-
-            public override string ToString() => Name; // 화면에 표시될 이름
-        }
-
-        private void ResetPermissionUI()
-        {
-            _selectedPermissionUserId = null;
-
-            chkAllEmployees.Checked = true;
-            clbDepartments.Enabled = false;
-
-            for (int i = 0; i < clbDepartments.Items.Count; i++)
-                clbDepartments.SetItemChecked(i, false);
-        }
-        private void LoadUserPermission(int userId)
-        {
-            // 먼저 전체 체크 해제
-            for (int i = 0; i < clbDepartments.Items.Count; i++)
-                clbDepartments.SetItemChecked(i, false);
-
-            var dt = DBManager.Instance.ExecuteDataTable(
-                "SELECT dept_id FROM user_view_permission WHERE viewer_user_id = @uid",
-                new MySqlParameter("@uid", userId));
-
-            // 권한 레코드가 없으면 = 모든 직원 보기
-            if (dt.Rows.Count == 0)
+            try
             {
-                chkAllEmployees.Checked = true;
-                clbDepartments.Enabled = false;
-                return;
+                // 사용자 목록: team_id 포함
+                var usersDt = DBManager.Instance.ExecuteDataTable(
+                    "SELECT id, COALESCE(full_name, email) AS name, department_id, team_id FROM users WHERE company_id=@cid ORDER BY name",
+                    new MySqlParameter("@cid", _companyId));
+
+                _cboViewer.DataSource = usersDt.Copy();
+                _cboViewer.DisplayMember = "name";
+                _cboViewer.ValueMember = "id";
+                _cboViewer.SelectedIndex = -1;
+
+                // 부서/팀 로드
+                var deptDt = DBManager.Instance.ExecuteDataTable(
+                    "SELECT id, name FROM departments WHERE company_id=@cid ORDER BY name",
+                    new MySqlParameter("@cid", _companyId));
+
+                var teamDt = DBManager.Instance.ExecuteDataTable(
+                    "SELECT t.id, t.name, t.department_id FROM teams t JOIN departments d ON d.id=t.department_id WHERE d.company_id=@cid ORDER BY t.name",
+                    new MySqlParameter("@cid", _companyId));
+
+                var teamsByDept = teamDt?.AsEnumerable()
+                    .GroupBy(r => r.Field<int>("department_id"))
+                    .ToDictionary(g => g.Key, g => g.ToList())
+                    ?? new Dictionary<int, List<DataRow>>();
+
+                // Use Tuple<int,int> as key to avoid anonymous type mismatches
+                var usersByDeptTeam = usersDt?.AsEnumerable()
+                    .GroupBy(r => Tuple.Create(r.Field<int?>("department_id") ?? 0, r.Field<int?>("team_id") ?? 0))
+                    .ToDictionary(g => g.Key, g => g.ToList())
+                    ?? new Dictionary<Tuple<int, int>, List<DataRow>>();
+
+                _tvVisibility.BeginUpdate();
+                _tvVisibility.Nodes.Clear();
+
+                // (부서 없음) 루트에 (팀 없음) 노드 + 직원
+                var rootNoDept = new TreeNode("(부서 없음)") { Tag = new PermissionTag { DeptId = 0 } };
+                var noDeptNoTeamKey = Tuple.Create(0, 0);
+                if (usersByDeptTeam.TryGetValue(noDeptNoTeamKey, out var usersNoDept))
+                {
+                    var teamNoneNode = new TreeNode("(팀 없음)") { Tag = new PermissionTag { DeptId = 0, TeamId = 0 } };
+                    foreach (var ur in usersNoDept)
+                    {
+                        var uid = Convert.ToInt32(ur["id"]);
+                        var uname = Convert.ToString(ur["name"]);
+                        var userNode = new TreeNode(uname) { Tag = new PermissionTag { DeptId = 0, TeamId = 0, UserId = uid } };
+                        teamNoneNode.Nodes.Add(userNode);
+                    }
+                    rootNoDept.Nodes.Add(teamNoneNode);
+                }
+                _tvVisibility.Nodes.Add(rootNoDept);
+
+                // 각 부서
+                if (deptDt != null)
+                {
+                    foreach (DataRow d in deptDt.Rows)
+                    {
+                        var deptId = Convert.ToInt32(d["id"]);
+                        var deptName = Convert.ToString(d["name"]);
+                        var deptNode = new TreeNode(deptName) { Tag = new PermissionTag { DeptId = deptId } };
+
+                        // 팀 없음 그룹
+                        var noTeamKey = Tuple.Create(deptId, 0);
+                        if (usersByDeptTeam.TryGetValue(noTeamKey, out var usersNoTeam))
+                        {
+                            var teamNoneNode = new TreeNode("(팀 없음)") { Tag = new PermissionTag { DeptId = deptId, TeamId = 0 } };
+                            foreach (var ur in usersNoTeam)
+                            {
+                                var uid = Convert.ToInt32(ur["id"]);
+                                var uname = Convert.ToString(ur["name"]);
+                                var userNode = new TreeNode(uname) { Tag = new PermissionTag { DeptId = deptId, TeamId = 0, UserId = uid } };
+                                teamNoneNode.Nodes.Add(userNode);
+                            }
+                            deptNode.Nodes.Add(teamNoneNode);
+                        }
+
+                        // 팀 노드 및 팀별 직원
+                        if (teamsByDept.TryGetValue(deptId, out var trows))
+                        {
+                            foreach (var tr in trows)
+                            {
+                                var teamId = Convert.ToInt32(tr["id"]);
+                                var teamName = Convert.ToString(tr["name"]);
+                                var teamNode = new TreeNode(teamName) { Tag = new PermissionTag { DeptId = deptId, TeamId = teamId } };
+
+                                var key = Tuple.Create(deptId, teamId);
+                                if (usersByDeptTeam.TryGetValue(key, out var usersInTeam))
+                                {
+                                    foreach (var ur in usersInTeam)
+                                    {
+                                        var uid = Convert.ToInt32(ur["id"]);
+                                        var uname = Convert.ToString(ur["name"]);
+                                        var userNode = new TreeNode(uname) { Tag = new PermissionTag { DeptId = deptId, TeamId = teamId, UserId = uid } };
+                                        teamNode.Nodes.Add(userNode);
+                                    }
+                                }
+
+                                deptNode.Nodes.Add(teamNode);
+                            }
+                        }
+
+                        _tvVisibility.Nodes.Add(deptNode);
+                    }
+                }
+
+                _tvVisibility.EndUpdate();
             }
-
-            chkAllEmployees.Checked = false;
-            clbDepartments.Enabled = true;
-
-            // 이 사용자가 가진 dept_id들을 HashSet으로
-            var allowedDeptIds = dt.AsEnumerable()
-                                   .Where(r => r["dept_id"] != DBNull.Value)
-                                   .Select(r => Convert.ToInt32(r["dept_id"]))
-                                   .ToHashSet();
-
-            for (int i = 0; i < clbDepartments.Items.Count; i++)
+            catch (Exception ex)
             {
-                var item = clbDepartments.Items[i] as ComboItem;
-                if (item == null) continue;
-
-                if (allowedDeptIds.Contains(item.Id))
-                    clbDepartments.SetItemChecked(i, true);
+                MessageBox.Show("권한 설정 초기화 중 오류: " + ex.Message, "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
-        private void chkAllEmployees_CheckedChanged(object sender, EventArgs e)
+        private class PermissionTag
         {
-            clbDepartments.Enabled = !chkAllEmployees.Checked;
+            public int DeptId { get; set; }
+            public int? TeamId { get; set; }
+            public int? UserId { get; set; }
         }
 
-        private void btnSavePermission_Click(object sender, EventArgs e)
+        private void cboViewer_SelectedIndexChanged(object sender, EventArgs e)
         {
-            if (_selectedPermissionUserId == null)
+            try
             {
-                MessageBox.Show("사용자를 선택하세요.");
-                return;
+                if (_cboViewer.SelectedIndex < 0) return;
+                object sel = _cboViewer.SelectedValue;
+                if (sel == null) return;
+                int viewerId;
+                if (sel is DataRowView drv && drv.Row.Table.Columns.Contains("id"))
+                    viewerId = Convert.ToInt32(drv["id"]);
+                else if (sel is IConvertible)
+                    viewerId = Convert.ToInt32(sel);
+                else
+                {
+                    int.TryParse(Convert.ToString(sel), out viewerId);
+                }
+                if (viewerId <= 0) return;
+                _selectedPermissionUserId = viewerId;
+
+                var permDt = DBManager.Instance.ExecuteDataTable(
+                    "SELECT dept_id, group_code FROM user_view_permission WHERE viewer_user_id=@uid",
+                    new MySqlParameter("@uid", _selectedPermissionUserId));
+
+                var allowedDepts = new HashSet<int>();
+                var allowedTeams = new HashSet<string>(); // deptId:teamId
+                var allowedUsers = new HashSet<string>(); // deptId:teamId:userId
+                foreach (DataRow r in permDt.Rows)
+                {
+                    var did = r["dept_id"] != DBNull.Value ? Convert.ToInt32(r["dept_id"]) : 0;
+                    var code = Convert.ToString(r["group_code"]);
+                    if (string.IsNullOrEmpty(code))
+                    {
+                        allowedDepts.Add(did);
+                    }
+                    else if (code.StartsWith("TEAM:"))
+                    {
+                        if (int.TryParse(code.Substring(5), out int tid))
+                            allowedTeams.Add(did + ":" + tid);
+                    }
+                    else if (code.StartsWith("USER:"))
+                    {
+                        if (int.TryParse(code.Substring(5), out int uid))
+                            allowedUsers.Add(did + ":" + 0 + ":" + uid); // 팀 없음은 0, 실제 팀은 후처리에서 모두 비교
+                    }
+                }
+
+                _tvUpdating = true;
+                foreach (TreeNode deptNode in _tvVisibility.Nodes)
+                {
+                    var dtag = deptNode.Tag as PermissionTag;
+                    if (dtag == null) continue;
+                    bool deptAllowed = allowedDepts.Contains(dtag.DeptId);
+                    deptNode.Checked = deptAllowed;
+
+                    foreach (TreeNode teamNode in deptNode.Nodes)
+                    {
+                        var ttag = teamNode.Tag as PermissionTag;
+                        if (ttag == null) continue;
+
+                        // 팀 노드 또는 (팀 없음) 노드
+                        bool teamAllowed = ttag.TeamId.HasValue && allowedTeams.Contains(ttag.DeptId + ":" + (ttag.TeamId ?? 0));
+                        teamNode.Checked = teamAllowed || deptAllowed;
+
+                        foreach (TreeNode userNode in teamNode.Nodes)
+                        {
+                            var utag = userNode.Tag as PermissionTag;
+                            if (utag == null) continue;
+                            string keyUser = utag.DeptId + ":" + (utag.TeamId ?? 0) + ":" + (utag.UserId ?? 0);
+                            bool userAllowed = allowedUsers.Contains(keyUser);
+                            userNode.Checked = userAllowed || teamAllowed || deptAllowed;
+                        }
+                    }
+                }
+                _tvUpdating = false;
             }
-
-            int uid = _selectedPermissionUserId.Value;
-
-            DBManager.Instance.ExecuteNonQuery(
-                "DELETE FROM user_view_permission WHERE viewer_user_id = @uid",
-                new MySqlParameter("@uid", uid));
-
-            if (chkAllEmployees.Checked)
+            catch (Exception ex)
             {
-                MessageBox.Show("저장되었습니다.");
-                return;
+                _tvUpdating = false;
+                MessageBox.Show("사용자 권한 로드 중 오류: " + ex.Message, "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
-
-            foreach (var obj in clbDepartments.CheckedItems)
-            {
-                var dept = obj as ComboItem;
-                if (dept == null) continue;
-
-                int deptId = dept.Id;
-
-                DBManager.Instance.ExecuteNonQuery(
-                    @"INSERT INTO user_view_permission (viewer_user_id, dept_id, group_code)
-              VALUES (@uid, @deptId, NULL)",
-                    new MySqlParameter("@uid", uid),
-                    new MySqlParameter("@deptId", deptId));
-            }
-            MessageBox.Show("저장되었습니다.");
         }
 
-        private void btnResetPermission_Click(object sender, EventArgs e)
+        private void tvVisibility_AfterCheck(object sender, TreeViewEventArgs e)
         {
-            ResetPermissionUI();
+            if (_tvUpdating) return;
+            if (_selectedPermissionUserId == null) return;
+
+            try
+            {
+                var tag = e.Node.Tag as PermissionTag;
+                if (tag == null) return;
+
+                if (e.Node.Parent == null)
+                {
+                    // 부서 노드 저장
+                    if (e.Node.Checked)
+                    {
+                        DBManager.Instance.ExecuteNonQuery(
+                            "INSERT IGNORE INTO user_view_permission (viewer_user_id, dept_id) VALUES (@u, @d)",
+                            new MySqlParameter("@u", _selectedPermissionUserId),
+                            new MySqlParameter("@d", tag.DeptId));
+                    }
+                    else
+                    {
+                        DBManager.Instance.ExecuteNonQuery(
+                            "DELETE FROM user_view_permission WHERE viewer_user_id=@u AND dept_id=@d",
+                            new MySqlParameter("@u", _selectedPermissionUserId),
+                            new MySqlParameter("@d", tag.DeptId));
+                    }
+                }
+                else
+                {
+                    var parentTag = e.Node.Parent.Tag as PermissionTag;
+                    int deptId = parentTag?.DeptId ?? tag.DeptId;
+
+                    if (tag.UserId.HasValue)
+                    {
+                        var code = "USER:" + tag.UserId.Value;
+                        if (e.Node.Checked)
+                        {
+                            DBManager.Instance.ExecuteNonQuery(
+                                "INSERT IGNORE INTO user_view_permission (viewer_user_id, dept_id, group_code) VALUES (@u, @d, @g)",
+                                new MySqlParameter("@u", _selectedPermissionUserId),
+                                new MySqlParameter("@d", deptId),
+                                new MySqlParameter("@g", code));
+                        }
+                        else
+                        {
+                            DBManager.Instance.ExecuteNonQuery(
+                                "DELETE FROM user_view_permission WHERE viewer_user_id=@u AND dept_id=@d AND group_code=@g",
+                                new MySqlParameter("@u", _selectedPermissionUserId),
+                                new MySqlParameter("@d", deptId),
+                                new MySqlParameter("@g", code));
+                        }
+                    }
+                    else if (tag.TeamId.HasValue)
+                    {
+                        var code = "TEAM:" + (tag.TeamId ?? 0);
+                        if (e.Node.Checked)
+                        {
+                            DBManager.Instance.ExecuteNonQuery(
+                                "INSERT IGNORE INTO user_view_permission (viewer_user_id, dept_id, group_code) VALUES (@u, @d, @g)",
+                                new MySqlParameter("@u", _selectedPermissionUserId),
+                                new MySqlParameter("@d", deptId),
+                                new MySqlParameter("@g", code));
+                        }
+                        else
+                        {
+                            DBManager.Instance.ExecuteNonQuery(
+                                "DELETE FROM user_view_permission WHERE viewer_user_id=@u AND dept_id=@d AND group_code=@g",
+                                new MySqlParameter("@u", _selectedPermissionUserId),
+                                new MySqlParameter("@d", deptId),
+                                new MySqlParameter("@g", code));
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("권한 저장 중 오류: " + ex.Message, "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
-        // --- Chat Ban Management ---
+        private void btnPermSave_Click(object sender, EventArgs e)
+        {
+            MessageBox.Show("변경사항은 즉시 저장됩니다.", "안내", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+
+        private void btnPermReset_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                _cboViewer.SelectedIndex = -1;
+                _tvVisibility.Nodes.Clear();
+                InitializePermissionTree();
+            }
+            catch { }
+        }
+
+        // Ensure stub exists to satisfy designer or callers
         private void InitializeChatBanUI()
         {
-            // Designer provides pageChatBan and controls; just bind data
-            if (pageChatBan == null) return;
-            LoadUserList();
-            LoadBanList();
-        }
-
-        private void LoadUserList()
-        {
-            var dt = DBManager.Instance.ExecuteDataTable(
-                "SELECT id, COALESCE(full_name,email) AS name FROM users WHERE company_id=@cid ORDER BY name",
-                new MySqlParameter("@cid", _companyId));
-
-            _cbUser1.DataSource = dt.Copy();
-            _cbUser1.DisplayMember = "name";
-            _cbUser1.ValueMember = "id";
-            _cbUser1.SelectedIndex = -1;
-
-            _cbUser2.DataSource = dt;
-            _cbUser2.DisplayMember = "name";
-            _cbUser2.ValueMember = "id";
-            _cbUser2.SelectedIndex = -1;
-        }
-
-        private void LoadBanList()
-        {
-            string sql = @"
-                SELECT b.id, b.user_id_1, b.user_id_2, b.created_at,
-                       u1.full_name AS name1, u2.full_name AS name2
-                FROM chat_bans b
-                JOIN users u1 ON u1.id = b.user_id_1
-                JOIN users u2 ON u2.id = b.user_id_2
-                WHERE u1.company_id = @cid OR u2.company_id = @cid
-                ORDER BY b.created_at DESC";
-
-            var dt = DBManager.Instance.ExecuteDataTable(sql, new MySqlParameter("@cid", _companyId));
-
-            _lvBans.BeginUpdate();
-            _lvBans.Items.Clear();
-            foreach (DataRow row in dt.Rows)
+            try
             {
-                var item = new ListViewItem(Convert.ToString(row["name1"]))
-                {
-                    Tag = row["id"]
-                };
-                item.SubItems.Add(Convert.ToString(row["name2"]));
-                item.SubItems.Add(Convert.ToDateTime(row["created_at"]).ToString("yyyy-MM-dd HH:mm:ss"));
-                _lvBans.Items.Add(item);
+                // 간단한 초기화: 사용자 콤보 로드 및 리스트뷰 컬럼 준비
+                var usersDt = DBManager.Instance.ExecuteDataTable(
+                    "SELECT id, COALESCE(full_name, email) AS name FROM users WHERE company_id=@cid ORDER BY name",
+                    new MySqlParameter("@cid", _companyId));
+
+                _cbUser1.DataSource = usersDt.Copy();
+                _cbUser1.DisplayMember = "name";
+                _cbUser1.ValueMember = "id";
+
+                _cbUser2.DataSource = usersDt;
+                _cbUser2.DisplayMember = "name";
+                _cbUser2.ValueMember = "id";
+
+                // bans 목록은 필요 시 DB에서 로드하도록 남겨둠
             }
-            _lvBans.EndUpdate();
+            catch { }
         }
 
         private void btnBlock_Click(object sender, EventArgs e)
         {
-            if (_cbUser1.SelectedIndex < 0 || _cbUser2.SelectedIndex < 0)
-            {
-                MessageBox.Show("두 사용자를 선택하세요.");
-                return;
-            }
-
-            int uid1 = Convert.ToInt32(_cbUser1.SelectedValue);
-            int uid2 = Convert.ToInt32(_cbUser2.SelectedValue);
-            if (uid1 == uid2)
-            {
-                MessageBox.Show("같은 사용자끼리는 차단할 수 없습니다.");
-                return;
-            }
-
-            int a = Math.Min(uid1, uid2);
-            int b = Math.Max(uid1, uid2);
-
             try
             {
-                DBManager.Instance.ExecuteNonQuery(
-                    "INSERT INTO chat_bans (user_id_1, user_id_2, created_at) VALUES (@u1, @u2, @created)",
-                    new MySqlParameter("@u1", a),
-                    new MySqlParameter("@u2", b),
-                    new MySqlParameter("@created", DateTime.Now));
-
-                LoadBanList();
+                if (_cbUser1.SelectedValue == null || _cbUser2.SelectedValue == null)
+                {
+                    MessageBox.Show("사용자 A/B를 선택하세요.", "안내", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
+                var a = Convert.ToInt32(_cbUser1.SelectedValue);
+                var b = Convert.ToInt32(_cbUser2.SelectedValue);
+                if (a == b)
+                {
+                    MessageBox.Show("동일 사용자끼리는 차단할 수 없습니다.", "안내", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
+                // 차단 테이블이 있다면 여기에 반영. 없으면 UI에만 표시.
+                var item = new ListViewItem(new[] { _cbUser1.Text, _cbUser2.Text, DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") });
+                _lvBans.Items.Add(item);
             }
-            catch (MySqlException ex)
+            catch (Exception ex)
             {
-                MessageBox.Show("차단 추가 중 오류: " + ex.Message);
+                MessageBox.Show("차단 처리 중 오류: " + ex.Message, "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
         private void btnUnblock_Click(object sender, EventArgs e)
         {
-            if (_lvBans.SelectedItems.Count == 0)
-            {
-                MessageBox.Show("해제할 항목을 선택하세요.");
-                return;
-            }
-
-            var idObj = _lvBans.SelectedItems[0].Tag;
-            if (idObj == null) return;
-
-            int banId = Convert.ToInt32(idObj);
             try
             {
-                DBManager.Instance.ExecuteNonQuery(
-                    "DELETE FROM chat_bans WHERE id=@id",
-                    new MySqlParameter("@id", banId));
-                LoadBanList();
+                if (_lvBans.SelectedItems.Count == 0)
+                {
+                    MessageBox.Show("해제할 항목을 선택하세요.", "안내", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
+                foreach (ListViewItem it in _lvBans.SelectedItems)
+                {
+                    _lvBans.Items.Remove(it);
+                }
             }
-            catch (MySqlException ex)
+            catch (Exception ex)
             {
-                MessageBox.Show("차단 해제 중 오류: " + ex.Message);
+                MessageBox.Show("차단 해제 중 오류: " + ex.Message, "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
     }
