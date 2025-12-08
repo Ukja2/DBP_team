@@ -11,12 +11,22 @@ namespace DBP_team
     public partial class ProfileForm : Form
     {
         private readonly int _userId;
+        private readonly int _viewerId; // who is viewing
+        private readonly bool _readOnly;
 
         public ProfileForm(int userId)
+            : this(viewerId: userId, targetUserId: userId, readOnly: false)
+        {
+        }
+
+        // New ctor to support viewing others in read-only
+        public ProfileForm(int viewerId, int targetUserId, bool readOnly)
         {
             InitializeComponent();
             UI.IconHelper.ApplyAppIcon(this);
-            _userId = userId;
+            _userId = targetUserId;
+            _viewerId = viewerId;
+            _readOnly = readOnly;
 
             if (pictureProfile == null || labelFullName == null)
             {
@@ -27,11 +37,29 @@ namespace DBP_team
                 pictureProfile.BackColor = Color.LightGray;
             }
 
+            // Buttons: only hook when not read-only
             try { this.btnClose.Click -= btnClose_Click; this.btnClose.Click += btnClose_Click; } catch { }
-            try { this.btnChangeImage.Click -= btnChangeImage_Click; this.btnChangeImage.Click += btnChangeImage_Click; } catch { }
-            try { this.btnSave.Click -= btnSave_Click; this.btnSave.Click += btnSave_Click; } catch { }
-            try { this.btnAddressSearch.Click -= btnAddressSearch_Click; this.btnAddressSearch.Click += btnAddressSearch_Click; } catch { }
-            try { this.btnMultiProfiles.Click -= btnMultiProfiles_Click; this.btnMultiProfiles.Click += btnMultiProfiles_Click; } catch { }
+            if (!_readOnly)
+            {
+                try { this.btnChangeImage.Click -= btnChangeImage_Click; this.btnChangeImage.Click += btnChangeImage_Click; } catch { }
+                try { this.btnSave.Click -= btnSave_Click; this.btnSave.Click += btnSave_Click; } catch { }
+                try { this.btnAddressSearch.Click -= btnAddressSearch_Click; this.btnAddressSearch.Click += btnAddressSearch_Click; } catch { }
+                try { this.btnMultiProfiles.Click -= btnMultiProfiles_Click; this.btnMultiProfiles.Click += btnMultiProfiles_Click; } catch { }
+            }
+            else
+            {
+                // hide edit-related buttons in read-only view
+                try { if (btnChangeImage != null) btnChangeImage.Visible = false; } catch { }
+                try { if (btnSave != null) btnSave.Visible = false; } catch { }
+                try { if (btnAddressSearch != null) btnAddressSearch.Visible = false; } catch { }
+                try { if (btnMultiProfiles != null) btnMultiProfiles.Visible = false; } catch { }
+
+                // disable editable fields
+                try { if (txtFullName != null) { txtFullName.ReadOnly = true; txtFullName.BackColor = SystemColors.Control; } } catch { }
+                try { if (txtNickname != null) { txtNickname.ReadOnly = true; txtNickname.BackColor = SystemColors.Control; } } catch { }
+                try { if (txtAddressMain != null) { txtAddressMain.ReadOnly = true; txtAddressMain.BackColor = SystemColors.Control; } } catch { }
+                try { if (txtAddressDetail != null) { txtAddressDetail.ReadOnly = true; txtAddressDetail.BackColor = SystemColors.Control; } } catch { }
+            }
         }
 
         private void ProfileForm_Load(object sender, EventArgs e)
@@ -71,30 +99,37 @@ namespace DBP_team
 
                 var row = dt.Rows[0];
 
+                // Full name: apply multi-profile display name if viewer is not the owner and read-only
                 var fullName = row.Table.Columns.Contains("full_name") ? row["full_name"].ToString() : string.Empty;
-                if (txtFullName != null)
-                    txtFullName.Text = fullName ?? string.Empty;
+                if (_readOnly && _viewerId > 0 && _viewerId != _userId)
+                {
+                    var mpName = MultiProfileService.GetDisplayNameForViewer(_userId, _viewerId);
+                    if (!string.IsNullOrWhiteSpace(mpName)) fullName = mpName;
+                }
+                if (txtFullName != null) txtFullName.Text = fullName ?? string.Empty;
 
+                // Email/company/department/team labels
                 labelEmail.Text = "이메일: " + (row["email"]?.ToString() ?? "(없음)");
                 labelCompany.Text = "회사: " + (row["company_name"]?.ToString() ?? "(없음)");
                 labelDepartment.Text = "부서: " + (row["department_name"]?.ToString() ?? "(없음)");
                 labelTeam.Text = "팀: " + (row["team_name"]?.ToString() ?? "(없음)");
 
+                // Nickname: always show from nickname column if present
                 try
                 {
-                    var nick = row.Table.Columns.Contains("nickname") ? row["nickname"]?.ToString() : null;
+                    string nick = null;
+                    if (row.Table.Columns.Contains("nickname") && row["nickname"] != DBNull.Value)
+                        nick = row["nickname"].ToString();
                     if (txtNickname != null)
-                        txtNickname.Text = !string.IsNullOrWhiteSpace(nick) ? nick : string.Empty;
+                        txtNickname.Text = string.IsNullOrWhiteSpace(nick) ? string.Empty : nick;
                 }
                 catch { }
 
-                // Address fields: try several possible column names and show as up to two lines.
+                // Address/zip
                 try
                 {
                     string address = null;
                     string zip = null;
-
-                    // common address column names fallback
                     var addrCols = new[] { "address", "addr", "address_main", "address1", "full_address" };
                     foreach (var c in addrCols)
                     {
@@ -104,8 +139,6 @@ namespace DBP_team
                             break;
                         }
                     }
-
-                    // detail column fallback (not shown until edit)
                     var detailCols = new[] { "address_detail", "addr_detail", "address2", "detail_address" };
                     string detail = null;
                     foreach (var c in detailCols)
@@ -116,8 +149,6 @@ namespace DBP_team
                             break;
                         }
                     }
-
-                    // zip fallback
                     var zipCols = new[] { "zipNo", "zipcode", "postal", "postal_code" };
                     foreach (var c in zipCols)
                     {
@@ -127,8 +158,6 @@ namespace DBP_team
                             break;
                         }
                     }
-
-                    // if address still null, try to compose from components (si/sgg/emd/rn)
                     if (string.IsNullOrWhiteSpace(address))
                     {
                         var parts = new List<string>();
@@ -139,44 +168,45 @@ namespace DBP_team
                         if (parts.Count > 0) address = string.Join(" ", parts);
                     }
 
-                    // display
                     txtAddressMain.Text = FormatAddressForDisplay(address);
-                    // if detail column exists, show it (user can edit)
                     if (!string.IsNullOrWhiteSpace(detail))
                     {
                         txtAddressDetail.Text = detail;
-                        txtAddressDetail.Visible = true;
+                        txtAddressDetail.Visible = !_readOnly; // hide detail input when read-only
                     }
                     else
                     {
                         txtAddressDetail.Text = string.Empty;
-                        txtAddressDetail.Visible = false;
+                        txtAddressDetail.Visible = !_readOnly ? false : false;
                     }
 
                     labelPostalCode.Text = "우편번호: " + (zip ?? "-");
                 }
                 catch { }
 
-                if (row.Table.Columns.Contains("profile_image") && row["profile_image"] != DBNull.Value && row["profile_image"] is byte[])
+                // Profile image with multi-profile override
+                try
                 {
-                    var bytes = (byte[])row["profile_image"];
-                    using (var ms = new MemoryStream(bytes))
+                    byte[] imgBytes = null;
+                    if (_readOnly && _viewerId > 0 && _viewerId != _userId)
+                        imgBytes = MultiProfileService.GetProfileImageForViewer(_userId, _viewerId);
+                    if (imgBytes == null && row.Table.Columns.Contains("profile_image") && row["profile_image"] != DBNull.Value)
+                        imgBytes = row["profile_image"] as byte[];
+
+                    if (imgBytes != null)
                     {
-                        try
+                        using (var ms = new MemoryStream(imgBytes))
                         {
-                            var img = Image.FromStream(ms);
-                            pictureProfile.Image = new Bitmap(img);
-                        }
-                        catch
-                        {
-                            pictureProfile.Image = null;
+                            try { pictureProfile.Image = Image.FromStream(ms); }
+                            catch { pictureProfile.Image = null; }
                         }
                     }
+                    else
+                    {
+                        pictureProfile.Image = null;
+                    }
                 }
-                else
-                {
-                    pictureProfile.Image = null;
-                }
+                catch { }
             }
             catch (Exception ex)
             {

@@ -968,7 +968,6 @@ namespace DBP_team
         {
             try
             {
-                // lvFavorites가 디자이너에 존재한다고 가정하고 간단한 컬럼/동작 구성
                 if (lvFavorites != null)
                 {
                     lvFavorites.View = View.Details;
@@ -985,7 +984,6 @@ namespace DBP_team
                     lvFavorites.DoubleClick -= OpenChatForSelectedFavorite;
                     lvFavorites.DoubleClick += OpenChatForSelectedFavorite;
 
-                    // 즐겨찾기 컨텍스트 메뉴
                     var cmsFav = new ContextMenuStrip();
                     var miOpen = new ToolStripMenuItem("채팅 열기", null, (s, e) => OpenChatForSelectedFavorite(s, e));
                     var miRemove = new ToolStripMenuItem("즐겨찾기 해제", null, (s, e) => UnfavoriteSelected(s, e));
@@ -995,25 +993,54 @@ namespace DBP_team
                     lvFavorites.ContextMenuStrip = cmsFav;
                 }
 
-                // 조직도에서 즐겨찾기 추가 컨텍스트 메뉴
                 if (treeViewUser != null)
                 {
                     var cmsTree = new ContextMenuStrip();
                     var miAddFav = new ToolStripMenuItem("즐겨찾기에 추가", null, (s, e) => FavoriteSelectedDepartmentNode(s, e));
+                    var miViewProfile = new ToolStripMenuItem("프로필 보기", null, (s, e) => ViewSelectedUserProfile());
                     cmsTree.Items.Add(miAddFav);
+                    cmsTree.Items.Add(miViewProfile);
                     treeViewUser.ContextMenuStrip = cmsTree;
-                    // 노드 오른쪽 클릭 선택 보정
+                    // replace external handler with inline to avoid missing context errors
                     treeViewUser.NodeMouseClick -= TreeViewUser_NodeMouseClick_Select;
-                    treeViewUser.NodeMouseClick += TreeViewUser_NodeMouseClick_Select;
+                    treeViewUser.NodeMouseClick += (s, e) =>
+                    {
+                        try { treeViewUser.SelectedNode = e.Node; } catch { }
+                    };
                 }
             }
             catch { }
         }
 
+        private void ViewSelectedUserProfile()
+        {
+            var node = treeViewUser.SelectedNode;
+            if (node == null || node.Tag == null) return;
+            if (!TryGetUserIdFromNodeTag(node.Tag, out int targetUserId))
+            {
+                MessageBox.Show("사용자만 선택하세요.", "안내", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+            if (_userId <= 0) return;
+
+            var mpName = MultiProfileService.GetDisplayNameForViewer(targetUserId, _userId);
+            var displayName = string.IsNullOrWhiteSpace(mpName) ? node.Text : mpName;
+
+            // Read-only profile view of target
+            using (var pf = new ProfileForm(viewerId: _userId, targetUserId: targetUserId, readOnly: true))
+            {
+                pf.Text = displayName + " 프로필";
+                pf.StartPosition = FormStartPosition.CenterParent;
+                pf.ShowDialog(this);
+            }
+        }
+
+        // Add missing handler stub to satisfy designer/event hookups
         private void TreeViewUser_NodeMouseClick_Select(object sender, TreeNodeMouseClickEventArgs e)
         {
             try
             {
+                if (treeViewUser == null || e == null) return;
                 treeViewUser.SelectedNode = e.Node;
             }
             catch { }
