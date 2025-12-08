@@ -8,18 +8,16 @@ using System.Threading;
 using System.Threading.Tasks;
 using MySql.Data.MySqlClient;
 
-
-
-
-
 namespace DBP_team
 {
     /// <summary>
     /// Simple in-process TCP chat server.
     /// Protocol (per line):
     /// AUTH|userId
-    /// MSG|fromUserId|toUserId|base64(message)
+    /// MSG|fromUserId|toUserId|base64(message)|messageId
     /// READ|readerUserId|senderUserId
+    /// EDIT|messageId|base64(newText)
+    /// DEL|messageId
     /// QUIT|userId
     /// Server does not echo to sender; only routes to receiver.
     /// </summary>
@@ -133,19 +131,35 @@ namespace DBP_team
                         if (!int.TryParse(parts[1], out int from)) continue;
                         if (!int.TryParse(parts[2], out int to)) continue;
                         var msgText = DecodeBase64(parts[3]);
-                        // persist to DB
-                        TryInsertMessage(from, to, msgText);
-                        // route
-                        RouteMessage(from, to, msgText);
-                        writer.WriteLine("SENT");
+                        // persist to DB and get new id
+                        int newId = TryInsertMessage(from, to, msgText);
+                        // route with message id so receiver can track for edit/delete
+                        RouteMessage(from, to, msgText, newId);
+                        // tell sender the id
+                        writer.WriteLine("SENT|" + from + "|" + to + "|" + newId);
                     }
                     else if (cmd == "READ" && parts.Length >= 3)
                     {
                         if (!int.TryParse(parts[1], out int readerId)) continue;
                         if (!int.TryParse(parts[2], out int senderId)) continue;
                         TryMarkRead(readerId, senderId);
-                        NotifyRead(readerId, senderId);
+                        BroadcastRead(readerId, senderId);
                         writer.WriteLine("READ_OK");
+                    }
+                    else if (cmd == "EDIT" && parts.Length >= 3)
+                    {
+                        if (!int.TryParse(parts[1], out int msgId)) continue;
+                        var newText = DecodeBase64(parts[2]);
+                        TryEditMessage(conn.UserId, msgId, newText);
+                        BroadcastEdit(msgId, newText);
+                        writer.WriteLine("EDIT_OK");
+                    }
+                    else if (cmd == "DEL" && parts.Length >= 2)
+                    {
+                        if (!int.TryParse(parts[1], out int msgId)) continue;
+                        TryDeleteMessage(conn.UserId, msgId);
+                        BroadcastDelete(msgId);
+                        writer.WriteLine("DEL_OK");
                     }
                     else if (cmd == "QUIT")
                     {
@@ -192,9 +206,9 @@ namespace DBP_team
             }
         }
 
-        private static void RouteMessage(int from, int to, string message)
+        private static void RouteMessage(int from, int to, string message, int messageId)
         {
-            var line = "MSG|" + from + "|" + to + "|" + EncodeBase64(message);
+            var line = "MSG|" + from + "|" + to + "|" + EncodeBase64(message) + "|" + messageId;
             List<ClientConn> targets = null;
             lock (_lock)
             {
@@ -207,7 +221,7 @@ namespace DBP_team
             }
         }
 
-        private static void NotifyRead(int readerId, int senderId)
+        private static void BroadcastRead(int readerId, int senderId)
         {
             var line = "READ|" + readerId + "|" + senderId;
             List<ClientConn> targets = null;
@@ -222,7 +236,44 @@ namespace DBP_team
             }
         }
 
-        private static void TryInsertMessage(int from, int to, string message)
+        private static void BroadcastEdit(int messageId, string newText)
+        {
+            var line = "EDIT|" + messageId + "|" + EncodeBase64(newText);
+            List<ClientConn> targets = null;
+            lock (_lock)
+            {
+                // broadcast to all clients of all users (receiver and sender may both need to see)
+                targets = new List<ClientConn>();
+                foreach (var kv in _clients)
+                {
+                    targets.AddRange(kv.Value);
+                }
+            }
+            foreach (var c in targets)
+            {
+                try { c.Writer.WriteLine(line); } catch { }
+            }
+        }
+
+        private static void BroadcastDelete(int messageId)
+        {
+            var line = "DEL|" + messageId;
+            List<ClientConn> targets = null;
+            lock (_lock)
+            {
+                targets = new List<ClientConn>();
+                foreach (var kv in _clients)
+                {
+                    targets.AddRange(kv.Value);
+                }
+            }
+            foreach (var c in targets)
+            {
+                try { c.Writer.WriteLine(line); } catch { }
+            }
+        }
+
+        private static int TryInsertMessage(int from, int to, string message)
         {
             try
             {
@@ -231,11 +282,14 @@ namespace DBP_team
                     new MySqlParameter("@s", from),
                     new MySqlParameter("@r", to),
                     new MySqlParameter("@m", message));
+                var idObj = DBManager.Instance.ExecuteScalar("SELECT LAST_INSERT_ID()");
+                if (idObj != null && idObj != DBNull.Value) return Convert.ToInt32(idObj);
             }
             catch (Exception ex)
             {
                 Console.WriteLine("DB insert failed: " + ex.Message);
             }
+            return 0;
         }
 
         private static void TryMarkRead(int readerId, int senderId)
@@ -250,6 +304,37 @@ namespace DBP_team
             catch (Exception ex)
             {
                 Console.WriteLine("DB read update failed: " + ex.Message);
+            }
+        }
+
+        private static void TryEditMessage(int requesterId, int messageId, string newText)
+        {
+            try
+            {
+                DBManager.Instance.ExecuteNonQuery(
+                    "UPDATE chat SET message = @m WHERE id = @id AND sender_id = @me",
+                    new MySqlParameter("@m", newText),
+                    new MySqlParameter("@id", messageId),
+                    new MySqlParameter("@me", requesterId));
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("DB edit failed: " + ex.Message);
+            }
+        }
+
+        private static void TryDeleteMessage(int requesterId, int messageId)
+        {
+            try
+            {
+                DBManager.Instance.ExecuteNonQuery(
+                    "DELETE FROM chat WHERE id = @id AND sender_id = @me",
+                    new MySqlParameter("@id", messageId),
+                    new MySqlParameter("@me", requesterId));
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("DB delete failed: " + ex.Message);
             }
         }
 

@@ -5,8 +5,8 @@ using MySql.Data.MySqlClient;
 namespace DBP_team
 {
     /// <summary>
-    /// 애플리케이션 전체에서 하나의 MySQL 연결을 공유하는 스레드 안전한 싱글턴입니다.
-    /// MySqlConnection 생성은 지연(Lazy)하며, 연결 문자열은 하드코드(개발용) 상태입니다.
+    /// 스레드 안전한 DB 접근 유틸리티. 각 호출마다 새 연결을 생성/폐기하여
+    /// 동시에 DataReader/Adapter를 사용하는 시나리오에서도 충돌이 발생하지 않도록 합니다.
     /// </summary>
     public sealed class DBManager : IDisposable
     {
@@ -14,48 +14,29 @@ namespace DBP_team
         public static DBManager Instance => _instance.Value;
 
         private readonly string _connectionString;
-        private MySqlConnection _connection;
         private bool _disposed;
 
         private DBManager()
         {
             _connectionString = GetConnectionString();
-            // MySqlConnection 생성/파싱은 실제 사용 시점으로 지연합니다.
         }
 
         private string GetConnectionString()
         {
-            // 하드코드된 개발용 연결 문자열
-            // 주: SslMode 값 때문에 문제가 발생했으므로 기본적으로 SslMode를 제거합니다.
-            // 필요하면 사용 중인 MySql.Data 버전에 맞는 값으로 설정하세요.
             return "Server=223.130.151.111;Port=3306;Database=s5701576;Uid=s5701576;Pwd=s5701576;";
         }
 
-        /// <summary>
-        /// 현재 열린 연결을 반환합니다. 연결 객체를 지연 생성하며 닫혀있으면 Open합니다.
-        /// </summary>
-        public MySqlConnection Connection
+        private MySqlConnection CreateOpenConnection()
         {
-            get
-            {
-                if (_connection == null)
-                {
-                    // MySqlConnection 생성 시 connection string 파싱이 일어남
-                    _connection = new MySqlConnection(_connectionString);
-                }
-
-                if (_connection.State != ConnectionState.Open)
-                {
-                    _connection.Open();
-                }
-
-                return _connection;
-            }
+            var conn = new MySqlConnection(_connectionString);
+            conn.Open();
+            return conn;
         }
 
         public DataTable ExecuteDataTable(string sql, params MySqlParameter[] parameters)
         {
-            using (var cmd = new MySqlCommand(sql, Connection))
+            using (var conn = CreateOpenConnection())
+            using (var cmd = new MySqlCommand(sql, conn))
             {
                 if (parameters != null && parameters.Length > 0)
                     cmd.Parameters.AddRange(parameters);
@@ -71,7 +52,8 @@ namespace DBP_team
 
         public int ExecuteNonQuery(string sql, params MySqlParameter[] parameters)
         {
-            using (var cmd = new MySqlCommand(sql, Connection))
+            using (var conn = CreateOpenConnection())
+            using (var cmd = new MySqlCommand(sql, conn))
             {
                 if (parameters != null && parameters.Length > 0)
                     cmd.Parameters.AddRange(parameters);
@@ -82,7 +64,8 @@ namespace DBP_team
 
         public object ExecuteScalar(string sql, params MySqlParameter[] parameters)
         {
-            using (var cmd = new MySqlCommand(sql, Connection))
+            using (var conn = CreateOpenConnection())
+            using (var cmd = new MySqlCommand(sql, conn))
             {
                 if (parameters != null && parameters.Length > 0)
                     cmd.Parameters.AddRange(parameters);
@@ -93,16 +76,15 @@ namespace DBP_team
 
         public MySqlDataReader ExecuteReader(string sql, params MySqlParameter[] parameters)
         {
-            var cmd = new MySqlCommand(sql, Connection);
+            var conn = CreateOpenConnection();
+            var cmd = new MySqlCommand(sql, conn);
             if (parameters != null && parameters.Length > 0)
                 cmd.Parameters.AddRange(parameters);
 
-            return cmd.ExecuteReader();
+            // 연결은 리더가 닫힐 때 자동으로 닫히게 합니다.
+            return cmd.ExecuteReader(System.Data.CommandBehavior.CloseConnection);
         }
 
-        /// <summary>
-        /// DB 연결 테스트(안전하게 새 연결을 만들어 테스트함).
-        /// </summary>
         public bool TestConnection(out string error)
         {
             error = null;
@@ -131,11 +113,6 @@ namespace DBP_team
             }
         }
 
-        /// <summary>
-        /// 사용자의 로그인/로그아웃 활동을 기록합니다.
-        /// </summary>
-        /// <param name="userId">사용자 ID</param>
-        /// <param name="activityType">'LOGIN' 또는 'LOGOUT'</param>
         public static void LogUserActivity(int userId, string activityType)
         {
             if (userId <= 0 || string.IsNullOrWhiteSpace(activityType)) return;
@@ -149,34 +126,13 @@ namespace DBP_team
             }
             catch (Exception ex)
             {
-                // 로그 기록 실패는 프로그램 실행에 영향을 주지 않도록 처리
                 Console.WriteLine($"사용자 활동 로그 기록 실패: {ex.Message}");
             }
         }
 
         public void Dispose()
         {
-            if (_disposed) return;
-
-            try
-            {
-                if (_connection != null)
-                {
-                    try
-                    {
-                        if (_connection.State != ConnectionState.Closed)
-                            _connection.Close();
-                    }
-                    catch { /* 무시 */ }
-
-                    _connection.Dispose();
-                    _connection = null;
-                }
-            }
-            finally
-            {
-                _disposed = true;
-            }
+            _disposed = true;
         }
     }
 }

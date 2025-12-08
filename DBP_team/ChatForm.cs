@@ -177,12 +177,13 @@ namespace DBP_team
                     var line = _reader.ReadLine();
                     if (line == null) break;
                     var parts = line.Split('|');
-                    if (parts.Length >= 4 && parts[0] == "MSG")
+                    if (parts.Length >= 5 && parts[0] == "MSG")
                     {
-                        int from = 0, to = 0;
+                        int from = 0, to = 0, mid = 0;
                         int.TryParse(parts[1], out from);
                         int.TryParse(parts[2], out to);
                         var msg = DecodeBase64(parts[3]);
+                        int.TryParse(parts[4], out mid);
 
                         // 자기 자신과의 채팅은 서버 echo를 무시 (중복 방지)
                         if (_myUserId == _otherUserId && from == _myUserId && to == _myUserId)
@@ -193,7 +194,10 @@ namespace DBP_team
                             var time = DateTime.Now;
                             this.BeginInvoke((Action)(() =>
                             {
-                                AddBubbleImmediate(msg, time, false, 0);
+                                // add bubble with real message id so edits/deletes apply while open
+                                var bubble = CreateBubble(msg, time, false, mid);
+                                _flow.Controls.Add(bubble);
+                                _flow.ScrollControlIntoView(bubble);
                                 UpdateRecentList();
                                 _writer?.WriteLine("READ|" + _myUserId + "|" + _otherUserId);
                             }));
@@ -216,8 +220,35 @@ namespace DBP_team
                             }
                             catch { }
 
-                            this.BeginInvoke((Action)(MarkMyMessagesRead));
+                            this.BeginInvoke((Action)(ApplyReadToMyMessages));
                         }
+                    }
+                    else if (parts.Length >= 4 && parts[0] == "SENT")
+                    {
+                        // SENT|from|to|messageId -> update last mine bubble id
+                        int from = 0, to = 0, mid = 0;
+                        int.TryParse(parts[1], out from);
+                        int.TryParse(parts[2], out to);
+                        int.TryParse(parts[3], out mid);
+                        if (from == _myUserId && to == _otherUserId && mid > 0)
+                        {
+                            this.BeginInvoke((Action)(() => ApplySentMessageId(mid)));
+                        }
+                    }
+                    else if (parts.Length >= 3 && parts[0] == "EDIT")
+                    {
+                        // Format: EDIT|messageId|base64(newText)
+                        int msgId = 0;
+                        int.TryParse(parts[1], out msgId);
+                        var newText = DecodeBase64(parts[2]);
+                        this.BeginInvoke((Action)(() => ApplyRemoteEdit(msgId, newText)));
+                    }
+                    else if (parts.Length >= 2 && parts[0] == "DEL")
+                    {
+                        // Format: DEL|messageId
+                        int msgId = 0;
+                        int.TryParse(parts[1], out msgId);
+                        this.BeginInvoke((Action)(() => ApplyRemoteDelete(msgId)));
                     }
                 }
             }
@@ -227,7 +258,8 @@ namespace DBP_team
             }
         }
 
-        private void MarkMyMessagesRead()
+        // New helper: mark my outgoing bubbles as read
+        private void ApplyReadToMyMessages()
         {
             foreach (Control c in _flow.Controls)
             {
@@ -240,6 +272,47 @@ namespace DBP_team
                     bubble.SetRead(true);
                 }
             }
+        }
+
+        private void ApplyRemoteEdit(int messageId, string newText)
+        {
+            try
+            {
+                foreach (Control c in _flow.Controls)
+                {
+                    var b = c as ChatBubbleControl;
+                    if (b == null) continue;
+                    var t = b.Tag as Tuple<string, DateTime, bool, int>;
+                    if (t != null && t.Item4 == messageId)
+                    {
+                        var newTag = Tuple.Create(newText, t.Item2, t.Item3, t.Item4);
+                        b.Tag = newTag;
+                        b.SetData(newText, t.Item2, t.Item3, _flow.ClientSize.Width);
+                        break;
+                    }
+                }
+            }
+            catch { }
+        }
+
+        private void ApplyRemoteDelete(int messageId)
+        {
+            try
+            {
+                for (int i = 0; i < _flow.Controls.Count; i++)
+                {
+                    var b = _flow.Controls[i] as ChatBubbleControl;
+                    if (b == null) continue;
+                    var t = b.Tag as Tuple<string, DateTime, bool, int>;
+                    if (t != null && t.Item4 == messageId)
+                    {
+                        _flow.Controls.RemoveAt(i);
+                        b.Dispose();
+                        break;
+                    }
+                }
+            }
+            catch { }
         }
 
         private static string EncodeBase64(string s) => Convert.ToBase64String(Encoding.UTF8.GetBytes(s ?? ""));
@@ -450,6 +523,7 @@ namespace DBP_team
                         new MySqlParameter("@id", messageId),
                         new MySqlParameter("@me", _myUserId));
 
+                    // Update my UI immediately
                     foreach (Control c in _flow.Controls)
                     {
                         var b = c as ChatBubbleControl;
@@ -462,6 +536,12 @@ namespace DBP_team
                             b.SetData(newText, t.Item2, t.Item3, _flow.ClientSize.Width);
                             break;
                         }
+                    }
+
+                    // Notify peer in realtime via chat server
+                    if (_myUserId != _otherUserId)
+                    {
+                        _writer?.WriteLine("EDIT|" + messageId + "|" + EncodeBase64(newText));
                     }
                 }
             }
@@ -481,6 +561,7 @@ namespace DBP_team
                 DBManager.Instance.ExecuteNonQuery("DELETE FROM chat WHERE id = @id AND sender_id = @me",
                     new MySqlParameter("@id", messageId), new MySqlParameter("@me", _myUserId));
 
+                // Update my UI immediately
                 for (int i = 0; i < _flow.Controls.Count; i++)
                 {
                     var b = _flow.Controls[i] as ChatBubbleControl;
@@ -492,6 +573,12 @@ namespace DBP_team
                         b.Dispose();
                         break;
                     }
+                }
+
+                // Notify peer in realtime via chat server
+                if (_myUserId != _otherUserId)
+                {
+                    _writer?.WriteLine("DEL|" + messageId);
                 }
             }
             catch (Exception ex)
@@ -626,7 +713,6 @@ namespace DBP_team
             {
                 var sentTime = DateTime.Now;
 
-                // 자기 자신과의 채팅: 서버로 보내지 않고 DB에만 저장 후 UI 1개만 추가
                 if (_myUserId == _otherUserId)
                 {
                     try
@@ -636,12 +722,14 @@ namespace DBP_team
                             new MySqlParameter("@s", _myUserId),
                             new MySqlParameter("@r", _otherUserId),
                             new MySqlParameter("@m", text));
+                        var idObj = DBManager.Instance.ExecuteScalar("SELECT LAST_INSERT_ID()");
+                        int msgId = (idObj != null && idObj != DBNull.Value) ? Convert.ToInt32(idObj) : 0;
+                        AddBubbleImmediate(text, sentTime, true, msgId);
                     }
-                    catch { }
+                    catch { AddBubbleImmediate(text, sentTime, true, 0); }
 
                     txtChat.Clear();
                     txtChat.Focus();
-                    AddBubbleImmediate(text, sentTime, true, 0);
                     UpdateRecentList();
                     return;
                 }
@@ -652,6 +740,7 @@ namespace DBP_team
 
                 txtChat.Clear();
                 txtChat.Focus();
+                // Temporary bubble with id 0; will be updated on SENT
                 AddBubbleImmediate(text, sentTime, true, 0);
                 UpdateRecentList();
             }
@@ -786,6 +875,24 @@ namespace DBP_team
                 }
             }
             catch { }
+        }
+
+        private void ApplySentMessageId(int messageId)
+        {
+            // find last my bubble with id 0 and set real id to enable edit/delete context menu
+            for (int i = _flow.Controls.Count - 1; i >= 0; i--)
+            {
+                var b = _flow.Controls[i] as ChatBubbleControl;
+                if (b == null) continue;
+                var t = b.Tag as Tuple<string, DateTime, bool, int>;
+                if (t != null && t.Item3 && t.Item4 == 0)
+                {
+                    b.Tag = Tuple.Create(t.Item1, t.Item2, t.Item3, messageId);
+                    b.SetMessageId(messageId);
+                    b.SetData(t.Item1, t.Item2, t.Item3, _flow.ClientSize.Width);
+                    break;
+                }
+            }
         }
     }
 }
