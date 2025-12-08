@@ -3,11 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Forms;
 using MySql.Data.MySqlClient;
-using DBP_team.Models;
-using System.Text;
-using System.ComponentModel;
 using System.Data;
-using DBP_team.UI;
+using System.ComponentModel; // for LicenseManager, LicenseUsageMode
+using System.Text; // for StringBuilder
+using DBP_team.Models; // for User
+using DBP_team.UI; // for InputDialog, TeamAddDialog
 
 namespace DBP_team
 {
@@ -484,6 +484,9 @@ namespace DBP_team
                     }
                 }
 
+                // Expand all nodes when tree is initialized
+                _tvVisibility.ExpandAll();
+
                 _tvVisibility.EndUpdate();
             }
             catch (Exception ex)
@@ -583,88 +586,86 @@ namespace DBP_team
 
         private void tvVisibility_AfterCheck(object sender, TreeViewEventArgs e)
         {
+            // 부모/자식 일괄 체크만 수행, DB 저장은 저장 버튼에서 수행
             if (_tvUpdating) return;
-            if (_selectedPermissionUserId == null) return;
-
             try
             {
-                var tag = e.Node.Tag as PermissionTag;
-                if (tag == null) return;
-
-                if (e.Node.Parent == null)
+                _tvUpdating = true;
+                // 자식으로 전파
+                foreach (TreeNode child in e.Node.Nodes)
                 {
-                    // 부서 노드 저장
-                    if (e.Node.Checked)
+                    child.Checked = e.Node.Checked;
+                }
+                // 부모로 전파 (부모는 하나라도 체크되면 체크, 모두 해제되면 해제)
+                var parent = e.Node.Parent;
+                while (parent != null)
+                {
+                    bool anyChecked = false;
+                    foreach (TreeNode sib in parent.Nodes)
+                    {
+                        if (sib.Checked) { anyChecked = true; break; }
+                    }
+                    parent.Checked = anyChecked;
+                    parent = parent.Parent;
+                }
+            }
+            finally { _tvUpdating = false; }
+        }
+
+        private void btnPermSave_Click(object sender, EventArgs e)
+        {
+            if (_cboViewer.SelectedIndex < 0)
+            {
+                MessageBox.Show("사용자를 선택하세요.", "권한 저장", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+            int viewerId = Convert.ToInt32((_cboViewer.SelectedValue is DataRowView drv) ? drv["id"] : _cboViewer.SelectedValue);
+            try
+            {
+                // 전체 삭제 후 현재 체크 상태로 재삽입
+                DBManager.Instance.ExecuteNonQuery("DELETE FROM user_view_permission WHERE viewer_user_id=@u", new MySqlParameter("@u", viewerId));
+
+                // 트리 순회하여 부서/팀/사용자 권한 저장
+                foreach (TreeNode deptNode in _tvVisibility.Nodes)
+                {
+                    var dtag = deptNode.Tag as PermissionTag;
+                    if (dtag == null) continue;
+                    if (deptNode.Checked)
                     {
                         DBManager.Instance.ExecuteNonQuery(
-                            "INSERT IGNORE INTO user_view_permission (viewer_user_id, dept_id) VALUES (@u, @d)",
-                            new MySqlParameter("@u", _selectedPermissionUserId),
-                            new MySqlParameter("@d", tag.DeptId));
+                            "INSERT INTO user_view_permission (viewer_user_id, dept_id) VALUES (@u,@d)",
+                            new MySqlParameter("@u", viewerId), new MySqlParameter("@d", dtag.DeptId));
                     }
-                    else
+                    foreach (TreeNode teamNode in deptNode.Nodes)
                     {
-                        DBManager.Instance.ExecuteNonQuery(
-                            "DELETE FROM user_view_permission WHERE viewer_user_id=@u AND dept_id=@d",
-                            new MySqlParameter("@u", _selectedPermissionUserId),
-                            new MySqlParameter("@d", tag.DeptId));
+                        var ttag = teamNode.Tag as PermissionTag;
+                        if (ttag == null) continue;
+                        if (teamNode.Checked && ttag.TeamId.HasValue)
+                        {
+                            DBManager.Instance.ExecuteNonQuery(
+                                "INSERT INTO user_view_permission (viewer_user_id, dept_id, group_code) VALUES (@u,@d,@g)",
+                                new MySqlParameter("@u", viewerId), new MySqlParameter("@d", dtag.DeptId), new MySqlParameter("@g", "TEAM:" + ttag.TeamId.Value));
+                        }
+                        foreach (TreeNode userNode in teamNode.Nodes)
+                        {
+                            var utag = userNode.Tag as PermissionTag;
+                            if (utag == null || !utag.UserId.HasValue) continue;
+                            if (userNode.Checked)
+                            {
+                                DBManager.Instance.ExecuteNonQuery(
+                                    "INSERT INTO user_view_permission (viewer_user_id, dept_id, group_code) VALUES (@u,@d,@g)",
+                                    new MySqlParameter("@u", viewerId), new MySqlParameter("@d", dtag.DeptId), new MySqlParameter("@g", "USER:" + utag.UserId.Value));
+                            }
+                        }
                     }
                 }
-                else
-                {
-                    var parentTag = e.Node.Parent.Tag as PermissionTag;
-                    int deptId = parentTag?.DeptId ?? tag.DeptId;
 
-                    if (tag.UserId.HasValue)
-                    {
-                        var code = "USER:" + tag.UserId.Value;
-                        if (e.Node.Checked)
-                        {
-                            DBManager.Instance.ExecuteNonQuery(
-                                "INSERT IGNORE INTO user_view_permission (viewer_user_id, dept_id, group_code) VALUES (@u, @d, @g)",
-                                new MySqlParameter("@u", _selectedPermissionUserId),
-                                new MySqlParameter("@d", deptId),
-                                new MySqlParameter("@g", code));
-                        }
-                        else
-                        {
-                            DBManager.Instance.ExecuteNonQuery(
-                                "DELETE FROM user_view_permission WHERE viewer_user_id=@u AND dept_id=@d AND group_code=@g",
-                                new MySqlParameter("@u", _selectedPermissionUserId),
-                                new MySqlParameter("@d", deptId),
-                                new MySqlParameter("@g", code));
-                        }
-                    }
-                    else if (tag.TeamId.HasValue)
-                    {
-                        var code = "TEAM:" + (tag.TeamId ?? 0);
-                        if (e.Node.Checked)
-                        {
-                            DBManager.Instance.ExecuteNonQuery(
-                                "INSERT IGNORE INTO user_view_permission (viewer_user_id, dept_id, group_code) VALUES (@u, @d, @g)",
-                                new MySqlParameter("@u", _selectedPermissionUserId),
-                                new MySqlParameter("@d", deptId),
-                                new MySqlParameter("@g", code));
-                        }
-                        else
-                        {
-                            DBManager.Instance.ExecuteNonQuery(
-                                "DELETE FROM user_view_permission WHERE viewer_user_id=@u AND dept_id=@d AND group_code=@g",
-                                new MySqlParameter("@u", _selectedPermissionUserId),
-                                new MySqlParameter("@d", deptId),
-                                new MySqlParameter("@g", code));
-                        }
-                    }
-                }
+                MessageBox.Show("권한이 저장되었습니다.", "저장", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex)
             {
                 MessageBox.Show("권한 저장 중 오류: " + ex.Message, "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
-        }
-
-        private void btnPermSave_Click(object sender, EventArgs e)
-        {
-            MessageBox.Show("변경사항은 즉시 저장됩니다.", "안내", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
         private void btnPermReset_Click(object sender, EventArgs e)

@@ -27,6 +27,29 @@ namespace DBP_team
         private const int IMG_ONLINE = 1;
         private const int IMG_WHITE = 2;
 
+        // 권한으로 보이는 사용자 캐시
+        private System.Collections.Generic.HashSet<int> _visibleUserIds;
+        private void RefreshVisibleUsers()
+        {
+            try
+            {
+                var dtVisible = Models.EmployeePermissionService.LoadVisibleEmployees(_userId, _companyId);
+                _visibleUserIds = new System.Collections.Generic.HashSet<int>(dtVisible?.AsEnumerable().Select(r => Convert.ToInt32(r["id"])) ?? Enumerable.Empty<int>());
+                // 자신은 제외 (자기 채팅 제외 케이스 외에는 무시)
+                _visibleUserIds.Remove(_userId);
+            }
+            catch
+            {
+                _visibleUserIds = new System.Collections.Generic.HashSet<int>();
+            }
+        }
+
+        private bool IsUserVisible(int otherUserId)
+        {
+            if (_visibleUserIds == null) RefreshVisibleUsers();
+            return _visibleUserIds != null && _visibleUserIds.Contains(otherUserId);
+        }
+
         public MainForm()
         {
             InitializeComponent();
@@ -34,6 +57,9 @@ namespace DBP_team
 
             // initialize status images
             InitStatusImages();
+
+            // Favorites UI 초기화
+            SetupFavoritesUI();
 
             // Self chat 버튼 이벤트 연결 (디자이너에 btnSelfChat이 있어야 합니다)
             try
@@ -128,6 +154,9 @@ namespace DBP_team
 
             _initializedFromCtor = true;
 
+            // 권한 캐시 초기화
+            RefreshVisibleUsers();
+
             UpdateSelfHeaderDisplay();
 
             LoadCompanyTree();
@@ -160,6 +189,9 @@ namespace DBP_team
                         // 무시
                     }
                 }
+
+                // 권한 캐시 초기화
+                RefreshVisibleUsers();
 
                 UpdateSelfHeaderDisplay();
                 LoadCompanyTree();
@@ -421,6 +453,9 @@ namespace DBP_team
                 foreach (DataRow r in dt.Rows)
                 {
                     var uid = Convert.ToInt32(r["user_id"]);
+                    // 권한: 숨겨진 사용자는 제외
+                    if (!IsUserVisible(uid)) continue;
+
                     var nameBase = r["name"]?.ToString() ?? "(이름 없음)";
                     // 멀티프로필 적용 (상대가 나에게 보여줄 이름)
                     var mpName = MultiProfileService.GetDisplayNameForViewer(uid, _userId);
@@ -444,6 +479,13 @@ namespace DBP_team
             if (listViewRecent.SelectedItems.Count == 0) return;
             var lvi = listViewRecent.SelectedItems[0];
             if (!(lvi.Tag is int otherId)) return;
+
+            // 권한: 숨겨진 사용자는 열지 않음
+            if (!IsUserVisible(otherId))
+            {
+                MessageBox.Show("권한 설정에 의해 숨겨진 사용자입니다.");
+                return;
+            }
 
             var otherDisplay = MultiProfileService.GetDisplayNameForViewer(otherId, _userId);
             if (string.IsNullOrWhiteSpace(otherDisplay)) otherDisplay = lvi.Text;
@@ -664,6 +706,9 @@ namespace DBP_team
                 foreach (DataRow row in dt.Rows)
                 {
                     int userId = Convert.ToInt32(row["user_id"]);
+                    // 권한: 숨겨진 사용자는 즐겨찾기에서 제외
+                    if (!IsUserVisible(userId)) continue;
+
                     string name = row["display_name"]?.ToString() ?? string.Empty;
                     string dept = row["department_name"]?.ToString() ?? string.Empty;
 
@@ -760,6 +805,13 @@ namespace DBP_team
             var item = lvFavorites.SelectedItems[0];
             if (!(item.Tag is int targetUserId)) return;
 
+            // 권한: 숨겨진 사용자는 열지 않음
+            if (!IsUserVisible(targetUserId))
+            {
+                MessageBox.Show("권한 설정에 의해 숨겨진 사용자입니다.");
+                return;
+            }
+
             var displayName = MultiProfileService.GetDisplayNameForViewer(targetUserId, _userId);
             if (string.IsNullOrWhiteSpace(displayName)) displayName = item.Text;
 
@@ -841,6 +893,8 @@ namespace DBP_team
                         {
                             int uid = Convert.ToInt32(row["id"]);
                             if (uid == _userId) continue;
+                            // 권한: 숨겨진 사용자는 검색 결과에서 제외
+                            if (!IsUserVisible(uid)) continue;
 
                             string baseDisplay = row["full_name"]?.ToString() ?? row["email"]?.ToString() ?? "이름 없음";
                             var mpDisplay = MultiProfileService.GetDisplayNameForViewer(uid, _userId);
@@ -893,6 +947,61 @@ namespace DBP_team
         private void lvFavorites_SelectedIndexChanged(object sender, EventArgs e)
         {
 
+        }
+
+        private void SetupFavoritesUI()
+        {
+            try
+            {
+                // lvFavorites가 디자이너에 존재한다고 가정하고 간단한 컬럼/동작 구성
+                if (lvFavorites != null)
+                {
+                    lvFavorites.View = View.Details;
+                    lvFavorites.FullRowSelect = true;
+                    lvFavorites.HideSelection = false;
+                    lvFavorites.MultiSelect = false;
+
+                    if (lvFavorites.Columns.Count == 0)
+                    {
+                        lvFavorites.Columns.Add("이름", 160);
+                        lvFavorites.Columns.Add("부서", 120);
+                    }
+
+                    lvFavorites.DoubleClick -= OpenChatForSelectedFavorite;
+                    lvFavorites.DoubleClick += OpenChatForSelectedFavorite;
+
+                    // 즐겨찾기 컨텍스트 메뉴
+                    var cmsFav = new ContextMenuStrip();
+                    var miOpen = new ToolStripMenuItem("채팅 열기", null, (s, e) => OpenChatForSelectedFavorite(s, e));
+                    var miRemove = new ToolStripMenuItem("즐겨찾기 해제", null, (s, e) => UnfavoriteSelected(s, e));
+                    cmsFav.Items.Add(miOpen);
+                    cmsFav.Items.Add(new ToolStripSeparator());
+                    cmsFav.Items.Add(miRemove);
+                    lvFavorites.ContextMenuStrip = cmsFav;
+                }
+
+                // 조직도에서 즐겨찾기 추가 컨텍스트 메뉴
+                if (treeViewUser != null)
+                {
+                    var cmsTree = new ContextMenuStrip();
+                    var miAddFav = new ToolStripMenuItem("즐겨찾기에 추가", null, (s, e) => FavoriteSelectedDepartmentNode(s, e));
+                    cmsTree.Items.Add(miAddFav);
+                    treeViewUser.ContextMenuStrip = cmsTree;
+                    // 노드 오른쪽 클릭 선택 보정
+                    treeViewUser.NodeMouseClick -= TreeViewUser_NodeMouseClick_Select;
+                    treeViewUser.NodeMouseClick += TreeViewUser_NodeMouseClick_Select;
+                }
+            }
+            catch { }
+        }
+
+        private void TreeViewUser_NodeMouseClick_Select(object sender, TreeNodeMouseClickEventArgs e)
+        {
+            try
+            {
+                treeViewUser.SelectedNode = e.Node;
+            }
+            catch { }
         }
     }
 }
