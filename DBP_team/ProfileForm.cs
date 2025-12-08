@@ -11,22 +11,17 @@ namespace DBP_team
     public partial class ProfileForm : Form
     {
         private readonly int _userId;
-        private readonly int _viewerId; // who is viewing
-        private readonly bool _readOnly;
+        private readonly AuthService _auth = new AuthService();
+
+        // 새로 추가: 프로필을 보는 사용자(뷰어) id와 읽기전용 플래그
+        private int _viewerId;
+        private bool _readOnly;
 
         public ProfileForm(int userId)
-            : this(viewerId: userId, targetUserId: userId, readOnly: false)
-        {
-        }
-
-        // New ctor to support viewing others in read-only
-        public ProfileForm(int viewerId, int targetUserId, bool readOnly)
         {
             InitializeComponent();
             UI.IconHelper.ApplyAppIcon(this);
-            _userId = targetUserId;
-            _viewerId = viewerId;
-            _readOnly = readOnly;
+            _userId = userId;
 
             if (pictureProfile == null || labelFullName == null)
             {
@@ -37,28 +32,32 @@ namespace DBP_team
                 pictureProfile.BackColor = Color.LightGray;
             }
 
-            // Buttons: only hook when not read-only
             try { this.btnClose.Click -= btnClose_Click; this.btnClose.Click += btnClose_Click; } catch { }
-            if (!_readOnly)
-            {
-                try { this.btnChangeImage.Click -= btnChangeImage_Click; this.btnChangeImage.Click += btnChangeImage_Click; } catch { }
-                try { this.btnSave.Click -= btnSave_Click; this.btnSave.Click += btnSave_Click; } catch { }
-                try { this.btnAddressSearch.Click -= btnAddressSearch_Click; this.btnAddressSearch.Click += btnAddressSearch_Click; } catch { }
-                try { this.btnMultiProfiles.Click -= btnMultiProfiles_Click; this.btnMultiProfiles.Click += btnMultiProfiles_Click; } catch { }
-            }
-            else
-            {
-                // hide edit-related buttons in read-only view
-                try { if (btnChangeImage != null) btnChangeImage.Visible = false; } catch { }
-                try { if (btnSave != null) btnSave.Visible = false; } catch { }
-                try { if (btnAddressSearch != null) btnAddressSearch.Visible = false; } catch { }
-                try { if (btnMultiProfiles != null) btnMultiProfiles.Visible = false; } catch { }
+            try { this.btnChangeImage.Click -= btnChangeImage_Click; this.btnChangeImage.Click += btnChangeImage_Click; } catch { }
+            try { this.btnSave.Click -= btnSave_Click; this.btnSave.Click += btnSave_Click; } catch { }
+            try { this.btnAddressSearch.Click -= btnAddressSearch_Click; this.btnAddressSearch.Click += btnAddressSearch_Click; } catch { }
+            try { this.btnMultiProfiles.Click -= btnMultiProfiles_Click; this.btnMultiProfiles.Click += btnMultiProfiles_Click; } catch { }
+            // ChangePWbtn 이벤트 연결 추가
+            try { this.ChangePWbtn.Click -= ChangePWbtn_Click; this.ChangePWbtn.Click += ChangePWbtn_Click; } catch { }
+        }
 
-                // disable editable fields
-                try { if (txtFullName != null) { txtFullName.ReadOnly = true; txtFullName.BackColor = SystemColors.Control; } } catch { }
-                try { if (txtNickname != null) { txtNickname.ReadOnly = true; txtNickname.BackColor = SystemColors.Control; } } catch { }
-                try { if (txtAddressMain != null) { txtAddressMain.ReadOnly = true; txtAddressMain.BackColor = SystemColors.Control; } } catch { }
-                try { if (txtAddressDetail != null) { txtAddressDetail.ReadOnly = true; txtAddressDetail.BackColor = SystemColors.Control; } } catch { }
+        // 추가된 오버로드: 뷰어(id)로 다른 사용자의 프로필을 읽기전용으로 열 때 사용
+        public ProfileForm(int viewerId, int targetUserId, bool readOnly) : this(targetUserId)
+        {
+            _viewerId = viewerId;
+            _readOnly = readOnly;
+
+            if (_readOnly)
+            {
+                // 읽기전용 모드: 수정 가능한 컨트롤 비활성화/숨김 (안전하게 try/catch)
+                try { if (txtFullName != null) txtFullName.ReadOnly = true; } catch { }
+                try { if (txtNickname != null) txtNickname.ReadOnly = true; } catch { }
+                try { if (txtAddressMain != null) txtAddressMain.ReadOnly = true; } catch { }
+                try { if (txtAddressDetail != null) txtAddressDetail.ReadOnly = true; } catch { }
+                try { if (btnChangeImage != null) btnChangeImage.Enabled = false; } catch { }
+                try { if (btnSave != null) btnSave.Visible = false; } catch { }
+                try { if (btnAddressSearch != null) btnAddressSearch.Enabled = false; } catch { }
+                try { if (ChangePWbtn != null) ChangePWbtn.Visible = false; } catch { }
             }
         }
 
@@ -99,37 +98,30 @@ namespace DBP_team
 
                 var row = dt.Rows[0];
 
-                // Full name: apply multi-profile display name if viewer is not the owner and read-only
                 var fullName = row.Table.Columns.Contains("full_name") ? row["full_name"].ToString() : string.Empty;
-                if (_readOnly && _viewerId > 0 && _viewerId != _userId)
-                {
-                    var mpName = MultiProfileService.GetDisplayNameForViewer(_userId, _viewerId);
-                    if (!string.IsNullOrWhiteSpace(mpName)) fullName = mpName;
-                }
-                if (txtFullName != null) txtFullName.Text = fullName ?? string.Empty;
+                if (txtFullName != null)
+                    txtFullName.Text = fullName ?? string.Empty;
 
-                // Email/company/department/team labels
                 labelEmail.Text = "이메일: " + (row["email"]?.ToString() ?? "(없음)");
                 labelCompany.Text = "회사: " + (row["company_name"]?.ToString() ?? "(없음)");
                 labelDepartment.Text = "부서: " + (row["department_name"]?.ToString() ?? "(없음)");
                 labelTeam.Text = "팀: " + (row["team_name"]?.ToString() ?? "(없음)");
 
-                // Nickname: always show from nickname column if present
                 try
                 {
-                    string nick = null;
-                    if (row.Table.Columns.Contains("nickname") && row["nickname"] != DBNull.Value)
-                        nick = row["nickname"].ToString();
+                    var nick = row.Table.Columns.Contains("nickname") ? row["nickname"]?.ToString() : null;
                     if (txtNickname != null)
-                        txtNickname.Text = string.IsNullOrWhiteSpace(nick) ? string.Empty : nick;
+                        txtNickname.Text = !string.IsNullOrWhiteSpace(nick) ? nick : string.Empty;
                 }
                 catch { }
 
-                // Address/zip
+                // Address fields: try several possible column names and show as up to two lines.
                 try
                 {
                     string address = null;
                     string zip = null;
+
+                    // common address column names fallback
                     var addrCols = new[] { "address", "addr", "address_main", "address1", "full_address" };
                     foreach (var c in addrCols)
                     {
@@ -139,6 +131,8 @@ namespace DBP_team
                             break;
                         }
                     }
+
+                    // detail column fallback (not shown until edit)
                     var detailCols = new[] { "address_detail", "addr_detail", "address2", "detail_address" };
                     string detail = null;
                     foreach (var c in detailCols)
@@ -149,6 +143,8 @@ namespace DBP_team
                             break;
                         }
                     }
+
+                    // zip fallback
                     var zipCols = new[] { "zipNo", "zipcode", "postal", "postal_code" };
                     foreach (var c in zipCols)
                     {
@@ -158,6 +154,8 @@ namespace DBP_team
                             break;
                         }
                     }
+
+                    // if address still null, try to compose from components (si/sgg/emd/rn)
                     if (string.IsNullOrWhiteSpace(address))
                     {
                         var parts = new List<string>();
@@ -168,45 +166,44 @@ namespace DBP_team
                         if (parts.Count > 0) address = string.Join(" ", parts);
                     }
 
+                    // display
                     txtAddressMain.Text = FormatAddressForDisplay(address);
+                    // if detail column exists, show it (user can edit)
                     if (!string.IsNullOrWhiteSpace(detail))
                     {
                         txtAddressDetail.Text = detail;
-                        txtAddressDetail.Visible = !_readOnly; // hide detail input when read-only
+                        txtAddressDetail.Visible = true;
                     }
                     else
                     {
                         txtAddressDetail.Text = string.Empty;
-                        txtAddressDetail.Visible = !_readOnly ? false : false;
+                        txtAddressDetail.Visible = false;
                     }
 
                     labelPostalCode.Text = "우편번호: " + (zip ?? "-");
                 }
                 catch { }
 
-                // Profile image with multi-profile override
-                try
+                if (row.Table.Columns.Contains("profile_image") && row["profile_image"] != DBNull.Value && row["profile_image"] is byte[])
                 {
-                    byte[] imgBytes = null;
-                    if (_readOnly && _viewerId > 0 && _viewerId != _userId)
-                        imgBytes = MultiProfileService.GetProfileImageForViewer(_userId, _viewerId);
-                    if (imgBytes == null && row.Table.Columns.Contains("profile_image") && row["profile_image"] != DBNull.Value)
-                        imgBytes = row["profile_image"] as byte[];
-
-                    if (imgBytes != null)
+                    var bytes = (byte[])row["profile_image"];
+                    using (var ms = new MemoryStream(bytes))
                     {
-                        using (var ms = new MemoryStream(imgBytes))
+                        try
                         {
-                            try { pictureProfile.Image = Image.FromStream(ms); }
-                            catch { pictureProfile.Image = null; }
+                            var img = Image.FromStream(ms);
+                            pictureProfile.Image = new Bitmap(img);
+                        }
+                        catch
+                        {
+                            pictureProfile.Image = null;
                         }
                     }
-                    else
-                    {
-                        pictureProfile.Image = null;
-                    }
                 }
-                catch { }
+                else
+                {
+                    pictureProfile.Image = null;
+                }
             }
             catch (Exception ex)
             {
@@ -344,6 +341,100 @@ namespace DBP_team
         private void txtAddressDetail_TextChanged(object sender, EventArgs e)
         {
 
+        }
+
+        private void ChangePWbtn_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                using (var dlg = new Form())
+                {
+                    dlg.Text = "비밀번호 변경";
+                    dlg.FormBorderStyle = FormBorderStyle.FixedDialog;
+                    dlg.StartPosition = FormStartPosition.CenterParent;
+                    dlg.ClientSize = new Size(380, 170);
+                    dlg.MaximizeBox = false;
+                    dlg.MinimizeBox = false;
+                    dlg.ShowIcon = false;
+
+                    var lblCurrent = new Label { Text = "현재 비밀번호", Location = new Point(10, 12), AutoSize = true };
+                    var txtCurrent = new TextBox { Location = new Point(140, 10), Width = 220, UseSystemPasswordChar = true };
+
+                    var lblNew = new Label { Text = "새 비밀번호", Location = new Point(10, 48), AutoSize = true };
+                    var txtNew = new TextBox { Location = new Point(140, 46), Width = 220, UseSystemPasswordChar = true };
+
+                    var lblConfirm = new Label { Text = "새 비밀번호 확인", Location = new Point(10, 84), AutoSize = true };
+                    var txtConfirm = new TextBox { Location = new Point(140, 82), Width = 220, UseSystemPasswordChar = true };
+
+                    var btnOk = new Button { Text = "변경", Location = new Point(200, 120), DialogResult = DialogResult.OK, Size = new Size(75, 28) };
+                    var btnCancel = new Button { Text = "취소", Location = new Point(285, 120), DialogResult = DialogResult.Cancel, Size = new Size(75, 28) };
+
+                    dlg.Controls.AddRange(new Control[] { lblCurrent, txtCurrent, lblNew, txtNew, lblConfirm, txtConfirm, btnOk, btnCancel });
+                    dlg.AcceptButton = btnOk;
+                    dlg.CancelButton = btnCancel;
+
+                    if (dlg.ShowDialog(this) != DialogResult.OK) return;
+
+                    var current = txtCurrent.Text;
+                    var newPw = txtNew.Text;
+                    var confirm = txtConfirm.Text;
+
+                    if (string.IsNullOrWhiteSpace(current) || string.IsNullOrWhiteSpace(newPw) || string.IsNullOrWhiteSpace(confirm))
+                    {
+                        MessageBox.Show("모든 필드를 입력하세요.", "입력 오류", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        return;
+                    }
+
+                    if (newPw != confirm)
+                    {
+                        MessageBox.Show("새 비밀번호가 일치하지 않습니다.", "입력 오류", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        return;
+                    }
+
+                    if (newPw.Length < 6)
+                    {
+                        MessageBox.Show("새 비밀번호는 최소 6자 이상이어야 합니다.", "입력 오류", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        return;
+                    }
+
+                    // 저장된 해시 확인
+                    var dt = DBManager.Instance.ExecuteDataTable("SELECT password_hash FROM users WHERE id = @id",
+                        new MySqlParameter("@id", _userId));
+
+                    if (dt == null || dt.Rows.Count == 0)
+                    {
+                        MessageBox.Show("사용자 정보를 찾을 수 없습니다.", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return;
+                    }
+
+                    var storedHash = dt.Rows[0]["password_hash"]?.ToString();
+
+                    if (!_auth.VerifyPassword(current, storedHash))
+                    {
+                        MessageBox.Show("현재 비밀번호가 일치하지 않습니다.", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return;
+                    }
+
+                    var newHash = _auth.CreateHash(newPw);
+
+                    var rows = DBManager.Instance.ExecuteNonQuery("UPDATE users SET password_hash = @hash WHERE id = @id",
+                        new MySqlParameter("@hash", newHash),
+                        new MySqlParameter("@id", _userId));
+
+                    if (rows > 0)
+                    {
+                        MessageBox.Show("비밀번호가 변경되었습니다.", "완료", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
+                    else
+                    {
+                        MessageBox.Show("비밀번호 변경에 실패했습니다.", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("비밀번호 변경 중 오류: " + ex.Message, "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
     }
 }

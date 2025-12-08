@@ -96,6 +96,16 @@ namespace DBP_team
             }
         }
 
+        /// <summary>
+        /// 외부에서 새 비밀번호 해시를 생성해야 할 때 사용합니다.
+        /// 기존 HashPassword 구현을 재사용하는 public 래퍼입니다.
+        /// </summary>
+        public string CreateHash(string password)
+        {
+            if (password == null) throw new ArgumentNullException(nameof(password));
+            return HashPassword(password);
+        }
+
         public bool VerifyPassword(string password, string stored)
         {
             if (string.IsNullOrEmpty(stored)) return false;

@@ -46,6 +46,7 @@
             this.btnAddressSearch = new System.Windows.Forms.Button();
             this.btnMultiProfiles = new System.Windows.Forms.Button();
             this.pnlTop = new System.Windows.Forms.Panel();
+            this.ChangePWbtn = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.pictureProfile)).BeginInit();
             this.pnlTop.SuspendLayout();
             this.SuspendLayout();
@@ -83,7 +84,7 @@
             this.labelEmail.Location = new System.Drawing.Point(150, 90);
             this.labelEmail.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.labelEmail.Name = "labelEmail";
-            this.labelEmail.Size = new System.Drawing.Size(77, 15);
+            this.labelEmail.Size = new System.Drawing.Size(82, 15);
             this.labelEmail.TabIndex = 2;
             this.labelEmail.Text = "이메일: (없음)";
             // 
@@ -95,7 +96,7 @@
             this.labelCompany.Location = new System.Drawing.Point(150, 110);
             this.labelCompany.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.labelCompany.Name = "labelCompany";
-            this.labelCompany.Size = new System.Drawing.Size(65, 15);
+            this.labelCompany.Size = new System.Drawing.Size(70, 15);
             this.labelCompany.TabIndex = 3;
             this.labelCompany.Text = "회사: (없음)";
             // 
@@ -107,7 +108,7 @@
             this.labelDepartment.Location = new System.Drawing.Point(280, 110);
             this.labelDepartment.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.labelDepartment.Name = "labelDepartment";
-            this.labelDepartment.Size = new System.Drawing.Size(65, 15);
+            this.labelDepartment.Size = new System.Drawing.Size(70, 15);
             this.labelDepartment.TabIndex = 4;
             this.labelDepartment.Text = "부서: (없음)";
             // 
@@ -119,7 +120,7 @@
             this.labelTeam.Location = new System.Drawing.Point(410, 110);
             this.labelTeam.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.labelTeam.Name = "labelTeam";
-            this.labelTeam.Size = new System.Drawing.Size(53, 15);
+            this.labelTeam.Size = new System.Drawing.Size(58, 15);
             this.labelTeam.TabIndex = 5;
             this.labelTeam.Text = "팀: (없음)";
             // 
@@ -212,7 +213,7 @@
             this.labelPostalCode.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(80)))), ((int)(((byte)(80)))), ((int)(((byte)(80)))));
             this.labelPostalCode.Location = new System.Drawing.Point(20, 230);
             this.labelPostalCode.Name = "labelPostalCode";
-            this.labelPostalCode.Size = new System.Drawing.Size(66, 15);
+            this.labelPostalCode.Size = new System.Drawing.Size(67, 15);
             this.labelPostalCode.TabIndex = 15;
             this.labelPostalCode.Text = "우편번호: -";
             // 
@@ -272,6 +273,7 @@
             // pnlTop
             // 
             this.pnlTop.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(250)))), ((int)(((byte)(250)))), ((int)(((byte)(250)))));
+            this.pnlTop.Controls.Add(this.ChangePWbtn);
             this.pnlTop.Controls.Add(this.pictureProfile);
             this.pnlTop.Controls.Add(this.labelFullName);
             this.pnlTop.Controls.Add(this.txtFullName);
@@ -287,6 +289,15 @@
             this.pnlTop.Name = "pnlTop";
             this.pnlTop.Size = new System.Drawing.Size(540, 190);
             this.pnlTop.TabIndex = 20;
+            // 
+            // ChangePWbtn
+            // 
+            this.ChangePWbtn.Location = new System.Drawing.Point(413, 143);
+            this.ChangePWbtn.Name = "ChangePWbtn";
+            this.ChangePWbtn.Size = new System.Drawing.Size(107, 28);
+            this.ChangePWbtn.TabIndex = 14;
+            this.ChangePWbtn.Text = "비밀번호 변경";
+            this.ChangePWbtn.UseVisualStyleBackColor = true;
             // 
             // ProfileForm
             // 
@@ -338,5 +349,6 @@
         private System.Windows.Forms.Button btnAddressSearch;
         private System.Windows.Forms.Button btnMultiProfiles;
         private System.Windows.Forms.Panel pnlTop;
+        private System.Windows.Forms.Button ChangePWbtn;
     }
 }
