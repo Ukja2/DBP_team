@@ -106,6 +106,15 @@ namespace DBP_team
                     btnSend.PerformClick();
                 }
             };
+
+            // 입력창 자동 높이 조절
+            txtChat.TextChanged += (s, e) =>
+            {
+                AdjustTextBoxHeight();
+            };
+
+            // 초기 높이 설정
+            AdjustTextBoxHeight();
         }
 
         private void ConnectToChatServer()
@@ -931,6 +940,7 @@ namespace DBP_team
             }
             catch { }
         }
+<<<<<<< HEAD
 
         private void ApplySentMessageId(int messageId)
         {
@@ -947,6 +957,37 @@ namespace DBP_team
                     b.SetData(t.Item1, t.Item2, t.Item3, _flow.ClientSize.Width);
                     break;
                 }
+=======
+        private void AdjustTextBoxHeight()
+        {
+            if (txtChat == null || pnlBottom == null) return;
+
+            const int minHeight = 25;
+            const int maxHeight = 105;
+            const int topPadding = 12;
+            const int bottomPadding = 13;
+
+            // 현재 텍스트 높이 측정
+            int textHeight = minHeight;
+
+            if (!string.IsNullOrEmpty(txtChat.Text))
+            {
+                Size size = TextRenderer.MeasureText(
+                    txtChat.Text + "W",  // 여유 공간
+                    txtChat.Font,
+                    new Size(txtChat.Width - 20, 0),
+                    TextFormatFlags.WordBreak | TextFormatFlags.TextBoxControl
+                );
+
+                textHeight = Math.Max(minHeight, Math.Min(size.Height, maxHeight));
+            }
+
+            // TextBox 높이 변경
+            if (txtChat.Height != textHeight)
+            {
+                txtChat.Height = textHeight;
+                pnlBottom.Height = topPadding + textHeight + bottomPadding;
+>>>>>>> 3d35fdb5b24dc34abddd7222ec3b71d74001855f
             }
         }
     }

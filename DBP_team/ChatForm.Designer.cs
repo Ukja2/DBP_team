@@ -78,6 +78,7 @@ namespace DBP_team
             // 
             // txtChat
             // 
+<<<<<<< HEAD
             this.txtChat.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.txtChat.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
@@ -85,6 +86,15 @@ namespace DBP_team
             this.txtChat.Location = new System.Drawing.Point(14, 15);
             this.txtChat.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.txtChat.Multiline = true;
+=======
+            this.txtChat.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.txtChat.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.txtChat.Font = new System.Drawing.Font("맑은 고딕", 10F);
+            this.txtChat.Location = new System.Drawing.Point(12, 12);
+            this.txtChat.Multiline = true;
+            this.txtChat.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
+>>>>>>> 3d35fdb5b24dc34abddd7222ec3b71d74001855f
             this.txtChat.Name = "txtChat";
             this.txtChat.Size = new System.Drawing.Size(308, 31);
             this.txtChat.TabIndex = 2;
@@ -92,7 +102,7 @@ namespace DBP_team
             // 
             // btnSend
             // 
-            this.btnSend.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnSend.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.btnSend.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(74)))), ((int)(((byte)(144)))), ((int)(((byte)(226)))));
             this.btnSend.FlatAppearance.BorderSize = 0;
             this.btnSend.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
@@ -101,11 +111,15 @@ namespace DBP_team
             this.btnSend.Location = new System.Drawing.Point(453, 12);
             this.btnSend.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.btnSend.Name = "btnSend";
+<<<<<<< HEAD
             this.btnSend.Size = new System.Drawing.Size(86, 35);
             this.btnSend.TabIndex = 3;
             this.btnSend.Text = "전송";
             this.btnSend.UseVisualStyleBackColor = false;
             this.btnSend.Click += new System.EventHandler(this.button1_Click);
+=======
+            this.btnSend.Size = new System.Drawing.Size(75, 28);
+>>>>>>> 3d35fdb5b24dc34abddd7222ec3b71d74001855f
             // 
             // txtSearch
             // 
@@ -180,7 +194,7 @@ namespace DBP_team
             // 
             // btnEmoji
             // 
-            this.btnEmoji.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnEmoji.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.btnEmoji.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(240)))), ((int)(((byte)(240)))));
             this.btnEmoji.FlatAppearance.BorderSize = 0;
             this.btnEmoji.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
@@ -196,7 +210,7 @@ namespace DBP_team
             // 
             // btnFile
             // 
-            this.btnFile.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnFile.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.btnFile.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(240)))), ((int)(((byte)(240)))));
             this.btnFile.FlatAppearance.BorderSize = 0;
             this.btnFile.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
