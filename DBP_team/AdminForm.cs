@@ -16,14 +16,16 @@ namespace DBP_team
         private readonly int _companyId;
         private int? _selectedPermissionUserId = null;
 
+        // Chat ban controls are declared in Designer.cs to be designer-friendly
+
         // Designer-friendly parameterless constructor
-        public AdminForm() : this(new User { Id = 0, CompanyId = 0, FullName = "°ü¸®ÀÚ" })
+        public AdminForm() : this(new User { Id = 0, CompanyId = 0, FullName = "ê´€ë¦¬ì" })
         {
         }
 
         public AdminForm(User me)
         {
-            _me = me ?? new User { Id = 0, CompanyId = 0, FullName = "°ü¸®ÀÚ" };
+            _me = me ?? new User { Id = 0, CompanyId = 0, FullName = "ê´€ë¦¬ì" };
             _companyId = _me.CompanyId ?? 0;
 
             InitializeComponent();
@@ -35,14 +37,14 @@ namespace DBP_team
             {
                 if (!AdminGuard.IsAdmin(_me))
                 {
-                    MessageBox.Show("°ü¸®ÀÚ¸¸ Á¢±Ù °¡´ÉÇÕ´Ï´Ù.", "±ÇÇÑ ¾øÀ½", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    this.Load += (s, e) => this.Close(); // Æû ·Îµå ÈÄ ¹Ù·Î ´İ±â
+                    MessageBox.Show("ê´€ë¦¬ìë§Œ ì ‘ê·¼ ê°€ëŠ¥í•©ë‹ˆë‹¤.", "ê¶Œí•œ ì—†ìŒ", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    this.Load += (s, e) => this.Close(); // í¼ ë¡œë“œ í›„ ë°”ë¡œ ë‹«ê¸°
                     return;
                 }
 
-                // DateTimePicker °ª ¼³Á¤
-                _dtFrom.Value = DateTime.Now.Date.AddDays(-7);
-                _dtTo.Value = DateTime.Now.Date.AddDays(1).AddSeconds(-1);
+                // Runtime UI injection for chat ban management will be done on Load
+                this.Load -= AdminForm_Load;
+                this.Load += AdminForm_Load;
             }
         }
 
@@ -50,12 +52,20 @@ namespace DBP_team
         {
             if (LicenseManager.UsageMode != LicenseUsageMode.Designtime)
             {
+                // DateTimePicker ì´ˆê¸°ê°’ ì„¤ì • (ë””ìì¸ íƒ€ì„ ì ‘ê·¼ ë°©ì§€)
+                if (_dtFrom != null) _dtFrom.Value = DateTime.Now.Date.AddDays(-7);
+                if (_dtTo != null) _dtTo.Value = DateTime.Now.Date.AddDays(1).AddSeconds(-1);
+
                 LoadDeptGrid();
                 LoadDeptComboForUser();
                 LoadUsersGrid();
                 LoadUserFilterCombo();
                 SearchAccessLogs();
                 InitPermissionTab();
+                SearchAccessLogs(); // ì´ˆê¸° ì ‘ì† ë¡œê·¸ ë¡œë“œ
+
+                // Runtime UI injection for chat ban management
+                InitializeChatBanUI();
             }
         }
 
@@ -70,8 +80,8 @@ namespace DBP_team
         private void ApplyDept_Click(object sender, EventArgs e) => ApplyUserDepartment();
         private void ChatSearch_Click(object sender, EventArgs e) => LoadChatGrid();
         private void SearchLog_Click(object sender, EventArgs e) => SearchAccessLogs();
-        private void GridChat_CellClick(object sender, DataGridViewCellEventArgs e) { /* ÇÊ¿äÇÑ °æ¿ì ±¸Çö */ }
-        private void GridLogs_CellClick(object sender, DataGridViewCellEventArgs e) { /* ÇÊ¿äÇÑ °æ¿ì ±¸Çö */ }
+        private void GridChat_CellClick(object sender, DataGridViewCellEventArgs e) { /* í•„ìš”í•œ ê²½ìš° êµ¬í˜„ */ }
+        private void GridLogs_CellClick(object sender, DataGridViewCellEventArgs e) { /* í•„ìš”í•œ ê²½ìš° êµ¬í˜„ */ }
 
         private void LoadDeptGrid(string keyword = null)
         {
@@ -84,13 +94,13 @@ namespace DBP_team
             var dt = DBManager.Instance.ExecuteDataTable(sql, pars);
             _gridDept.DataSource = dt;
             if (_gridDept.Columns.Contains("id")) _gridDept.Columns["id"].Visible = false;
-            if (_gridDept.Columns.Contains("name")) _gridDept.Columns["name"].HeaderText = "ºÎ¼­¸í";
+            if (_gridDept.Columns.Contains("name")) _gridDept.Columns["name"].HeaderText = "ë¶€ì„œëª…";
         }
 
         private void AddDepartment()
         {
             var name = _txtDeptName.Text?.Trim();
-            if (string.IsNullOrWhiteSpace(name)) { MessageBox.Show("ºÎ¼­¸íÀ» ÀÔ·ÂÇÏ¼¼¿ä."); return; }
+            if (string.IsNullOrWhiteSpace(name)) { MessageBox.Show("ë¶€ì„œëª…ì„ ì…ë ¥í•˜ì„¸ìš”."); return; }
             DBManager.Instance.ExecuteNonQuery(
                 "INSERT INTO departments (company_id, name) VALUES (@cid, @name)",
                 new MySqlParameter("@cid", _companyId), new MySqlParameter("@name", name));
@@ -100,10 +110,10 @@ namespace DBP_team
 
         private void UpdateDepartment()
         {
-            if (_gridDept.CurrentRow == null) { MessageBox.Show("¼öÁ¤ÇÒ ºÎ¼­¸¦ ¼±ÅÃÇÏ¼¼¿ä."); return; }
+            if (_gridDept.CurrentRow == null) { MessageBox.Show("ìˆ˜ì •í•  ë¶€ì„œë¥¼ ì„ íƒí•˜ì„¸ìš”."); return; }
             var id = Convert.ToInt32((_gridDept.CurrentRow.DataBoundItem as DataRowView)["id"]);
             var name = _txtDeptName.Text?.Trim();
-            if (string.IsNullOrWhiteSpace(name)) { MessageBox.Show("ºÎ¼­¸íÀ» ÀÔ·ÂÇÏ¼¼¿ä."); return; }
+            if (string.IsNullOrWhiteSpace(name)) { MessageBox.Show("ë¶€ì„œëª…ì„ ì…ë ¥í•˜ì„¸ìš”."); return; }
             DBManager.Instance.ExecuteNonQuery(
                 "UPDATE departments SET name = @name WHERE id = @id AND company_id = @cid",
                 new MySqlParameter("@name", name), new MySqlParameter("@id", id), new MySqlParameter("@cid", _companyId));
@@ -121,12 +131,12 @@ namespace DBP_team
             _cboDeptForUser.ValueMember = "id";
         }
 
-        // Á÷¿ø(À¯Àú) ¸ñ·Ï ·Îµå + G ±â´É ±ÇÇÑ Àû¿ë
+        // ì§ì›(ìœ ì €) ëª©ë¡ ë¡œë“œ + G ê¸°ëŠ¥ ê¶Œí•œ ì ìš©
         private void LoadUsersGrid(string keyword = null)
         {
             DataTable dt;
 
-            // 1. °ü¸®ÀÚ(Admin)´Â Ç×»ó È¸»ç ÀüÃ¼ Á÷¿ø º¸ÀÌ°Ô (±ÇÇÑ Á¦ÇÑ ¾øÀ½)
+            // 1. ê´€ë¦¬ì(Admin)ëŠ” í•­ìƒ íšŒì‚¬ ì „ì²´ ì§ì› ë³´ì´ê²Œ (ê¶Œí•œ ì œí•œ ì—†ìŒ)
             if (AdminGuard.IsAdmin(_me))
             {
                 var sql = "SELECT u.id, COALESCE(u.full_name, u.email) AS name, u.email, " +
@@ -152,8 +162,8 @@ namespace DBP_team
             }
             else
             {
-                // 2. ÀÏ¹İ »ç¿ëÀÚ: G ±â´É ±ÇÇÑ ·ÎÁ÷ Àû¿ë
-                // EmployeePermissionService¿¡¼­ user_view_permission ±â¹İÀ¸·Î ÇÊÅÍ¸µµÊ
+                // 2. ì¼ë°˜ ì‚¬ìš©ì: G ê¸°ëŠ¥ ê¶Œí•œ ë¡œì§ ì ìš©
+                // EmployeePermissionServiceì—ì„œ user_view_permission ê¸°ë°˜ìœ¼ë¡œ í•„í„°ë§ë¨
                 dt = EmployeePermissionService.LoadVisibleEmployees(
                     viewerId: _me.Id,
                     companyId: _companyId,
@@ -170,20 +180,20 @@ namespace DBP_team
                 _gridUsers.Columns["department_id"].Visible = false;
 
             if (_gridUsers.Columns.Contains("name"))
-                _gridUsers.Columns["name"].HeaderText = "ÀÌ¸§";
+                _gridUsers.Columns["name"].HeaderText = "ì´ë¦„";
 
             if (_gridUsers.Columns.Contains("email"))
-                _gridUsers.Columns["email"].HeaderText = "ÀÌ¸ŞÀÏ";
+                _gridUsers.Columns["email"].HeaderText = "ì´ë©”ì¼";
 
             if (_gridUsers.Columns.Contains("department"))
-                _gridUsers.Columns["department"].HeaderText = "ºÎ¼­";
+                _gridUsers.Columns["department"].HeaderText = "ë¶€ì„œ";
         }
 
 
         private void ApplyUserDepartment()
         {
-            if (_gridUsers.SelectedRows.Count == 0) { MessageBox.Show("»ç¿ëÀÚ¸¦ ¼±ÅÃÇÏ¼¼¿ä."); return; }
-            if (!int.TryParse(Convert.ToString(_cboDeptForUser.SelectedValue), out int deptId)) { MessageBox.Show("ºÎ¼­¸¦ ¼±ÅÃÇÏ¼¼¿ä."); return; }
+            if (_gridUsers.SelectedRows.Count == 0) { MessageBox.Show("ì‚¬ìš©ìë¥¼ ì„ íƒí•˜ì„¸ìš”."); return; }
+            if (!int.TryParse(Convert.ToString(_cboDeptForUser.SelectedValue), out int deptId)) { MessageBox.Show("ë¶€ì„œë¥¼ ì„ íƒí•˜ì„¸ìš”."); return; }
 
             foreach (DataGridViewRow row in _gridUsers.SelectedRows)
             {
@@ -232,10 +242,10 @@ namespace DBP_team
 
             var dt = DBManager.Instance.ExecuteDataTable(sql.ToString(), pars.ToArray());
             _gridChat.DataSource = dt;
-            if (_gridChat.Columns.Contains("sender")) _gridChat.Columns["sender"].HeaderText = "º¸³½»ç¶÷";
-            if (_gridChat.Columns.Contains("receiver")) _gridChat.Columns["receiver"].HeaderText = "¹Ş´Â»ç¶÷";
-            if (_gridChat.Columns.Contains("message")) _gridChat.Columns["message"].HeaderText = "³»¿ë";
-            if (_gridChat.Columns.Contains("created_at")) _gridChat.Columns["created_at"].HeaderText = "½Ã°£";
+            if (_gridChat.Columns.Contains("sender")) _gridChat.Columns["sender"].HeaderText = "ë³´ë‚¸ì‚¬ëŒ";
+            if (_gridChat.Columns.Contains("receiver")) _gridChat.Columns["receiver"].HeaderText = "ë°›ëŠ”ì‚¬ëŒ";
+            if (_gridChat.Columns.Contains("message")) _gridChat.Columns["message"].HeaderText = "ë‚´ìš©";
+            if (_gridChat.Columns.Contains("created_at")) _gridChat.Columns["created_at"].HeaderText = "ì‹œê°„";
         }
 
         private void SearchAccessLogs()
@@ -281,28 +291,28 @@ namespace DBP_team
 
                 if (_gridLogs.Columns.Contains("created_at"))
                 {
-                    _gridLogs.Columns["created_at"].HeaderText = "½Ã°£";
+                    _gridLogs.Columns["created_at"].HeaderText = "ì‹œê°„";
                     _gridLogs.Columns["created_at"].DefaultCellStyle.Format = "yyyy-MM-dd HH:mm:ss";
                 }
-                if (_gridLogs.Columns.Contains("full_name")) _gridLogs.Columns["full_name"].HeaderText = "»ç¿ëÀÚ¸í";
-                if (_gridLogs.Columns.Contains("activity_type")) _gridLogs.Columns["activity_type"].HeaderText = "È°µ¿";
-                if (_gridLogs.Columns.Contains("user_id")) _gridLogs.Columns["user_id"].HeaderText = "»ç¿ëÀÚ ID";
+                if (_gridLogs.Columns.Contains("full_name")) _gridLogs.Columns["full_name"].HeaderText = "ì‚¬ìš©ìëª…";
+                if (_gridLogs.Columns.Contains("activity_type")) _gridLogs.Columns["activity_type"].HeaderText = "í™œë™";
+                if (_gridLogs.Columns.Contains("user_id")) _gridLogs.Columns["user_id"].HeaderText = "ì‚¬ìš©ì ID";
 
                 if (_gridLogs.Columns.Contains("email")) _gridLogs.Columns["email"].Visible = false;
             }
             catch (Exception ex)
             {
-                MessageBox.Show("·Î±× °Ë»ö Áß ¿À·ù ¹ß»ı: " + ex.Message, "¿À·ù", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("ë¡œê·¸ ê²€ìƒ‰ ì¤‘ ì˜¤ë¥˜ ë°œìƒ: " + ex.Message, "ì˜¤ë¥˜", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
         private void InitPermissionTab()
         {
-            // µğÀÚÀÌ³Ê¿¡¼­ ±ÇÇÑ ÅÇ °ü·Ã ÄÁÆ®·ÑÀÌ Ãß°¡µÇ¾î ÀÖÁö ¾ÊÀ¸¸é ¾Æ¹« ÀÛ¾÷ÇÏÁö ¾ÊÀ½
+            // ë””ìì´ë„ˆì—ì„œ ê¶Œí•œ íƒ­ ê´€ë ¨ ì»¨íŠ¸ë¡¤ì´ ì¶”ê°€ë˜ì–´ ìˆì§€ ì•Šìœ¼ë©´ ì•„ë¬´ ì‘ì—…í•˜ì§€ ì•ŠìŒ
             if (dgvUsers == null || clbDepartments == null || lblSelectedUser == null
                 || chkAllEmployees == null || btnSavePermission == null || btnResetPermission == null)
                 return;
 
-            // ÀÌº¥Æ® Áßº¹ µî·Ï ¹æÁö: ¸ÕÀú Á¦°Å ÈÄ µî·Ï
+            // ì´ë²¤íŠ¸ ì¤‘ë³µ ë“±ë¡ ë°©ì§€: ë¨¼ì € ì œê±° í›„ ë“±ë¡
             chkAllEmployees.CheckedChanged -= chkAllEmployees_CheckedChanged;
             chkAllEmployees.CheckedChanged += chkAllEmployees_CheckedChanged;
 
@@ -312,16 +322,16 @@ namespace DBP_team
             btnResetPermission.Click -= btnResetPermission_Click;
             btnResetPermission.Click += btnResetPermission_Click;
 
-            // ±×¸®µå µ¿ÀÛ ¼³Á¤
+            // ê·¸ë¦¬ë“œ ë™ì‘ ì„¤ì •
             dgvUsers.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
             dgvUsers.AutoGenerateColumns = true;
             dgvUsers.MultiSelect = false;
 
-            // ÃÊ±â µ¥ÀÌÅÍ ·Îµå
+            // ì´ˆê¸° ë°ì´í„° ë¡œë“œ
             LoadPermissionUserGrid();
             LoadPermissionDepartments();
 
-            // UI ÃÊ±âÈ­
+            // UI ì´ˆê¸°í™”
             ResetPermissionUI();
         }
 
@@ -336,11 +346,11 @@ namespace DBP_team
             _selectedPermissionUserId = Convert.ToInt32(drv["id"]);
 
             if (lblSelectedUser != null)
-                lblSelectedUser.Text = $"¼±ÅÃµÈ »ç¿ëÀÚ: {drv["name"]} (ID={_selectedPermissionUserId})";
+                lblSelectedUser.Text = $"ì„ íƒëœ ì‚¬ìš©ì: {drv["name"]} (ID={_selectedPermissionUserId})";
 
             LoadUserPermission(_selectedPermissionUserId.Value);
         }
-        //¿Ş
+        //ì™¼
         private void LoadPermissionUserGrid(string keyword = null)
         {
             var sql = new StringBuilder();
@@ -368,11 +378,11 @@ namespace DBP_team
 
             if (dgvUsers.Columns.Contains("id")) dgvUsers.Columns["id"].Visible = false;
             if (dgvUsers.Columns.Contains("department_id")) dgvUsers.Columns["department_id"].Visible = false;
-            if (dgvUsers.Columns.Contains("name")) dgvUsers.Columns["name"].HeaderText = "ÀÌ¸§";
-            if (dgvUsers.Columns.Contains("email")) dgvUsers.Columns["email"].HeaderText = "ÀÌ¸ŞÀÏ";
-            if (dgvUsers.Columns.Contains("department")) dgvUsers.Columns["department"].HeaderText = "ºÎ¼­";
+            if (dgvUsers.Columns.Contains("name")) dgvUsers.Columns["name"].HeaderText = "ì´ë¦„";
+            if (dgvUsers.Columns.Contains("email")) dgvUsers.Columns["email"].HeaderText = "ì´ë©”ì¼";
+            if (dgvUsers.Columns.Contains("department")) dgvUsers.Columns["department"].HeaderText = "ë¶€ì„œ";
         }
-        //¿À
+        //ì˜¤
         private void LoadPermissionDepartments()
         {
             try
@@ -383,7 +393,7 @@ namespace DBP_team
 
                 clbDepartments.Items.Clear();
 
-                // CheckedListBox´Â DataSource ¾²Áö ¸»°í Items¿¡ Á÷Á¢ ³Ö±â
+                // CheckedListBoxëŠ” DataSource ì“°ì§€ ë§ê³  Itemsì— ì§ì ‘ ë„£ê¸°
                 foreach (DataRow row in dt.Rows)
                 {
                     clbDepartments.Items.Add(
@@ -392,23 +402,23 @@ namespace DBP_team
                             Id = Convert.ToInt32(row["id"]),
                             Name = row["name"].ToString()
                         },
-                        false  // ÃÊ±â Ã¼Å©»óÅÂ false
+                        false  // ì´ˆê¸° ì²´í¬ìƒíƒœ false
                     );
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show("ºÎ¼­ ¸ñ·ÏÀ» ºÒ·¯¿Ã ¶§ ¿À·ù ¹ß»ı: " + ex.Message);
+                MessageBox.Show("ë¶€ì„œ ëª©ë¡ì„ ë¶ˆëŸ¬ì˜¬ ë•Œ ì˜¤ë¥˜ ë°œìƒ: " + ex.Message);
             }
         }
 
-        // CheckedListBox¿¡ ³ÖÀ» °´Ã¼ (Ç¥½Ã¿ë)
+        // CheckedListBoxì— ë„£ì„ ê°ì²´ (í‘œì‹œìš©)
         private class ComboItem
         {
             public int Id { get; set; }
             public string Name { get; set; }
 
-            public override string ToString() => Name; // È­¸é¿¡ Ç¥½ÃµÉ ÀÌ¸§
+            public override string ToString() => Name; // í™”ë©´ì— í‘œì‹œë  ì´ë¦„
         }
 
         private void ResetPermissionUI()
@@ -423,7 +433,7 @@ namespace DBP_team
         }
         private void LoadUserPermission(int userId)
         {
-            // ¸ÕÀú ÀüÃ¼ Ã¼Å© ÇØÁ¦
+            // ë¨¼ì € ì „ì²´ ì²´í¬ í•´ì œ
             for (int i = 0; i < clbDepartments.Items.Count; i++)
                 clbDepartments.SetItemChecked(i, false);
 
@@ -431,7 +441,7 @@ namespace DBP_team
                 "SELECT dept_id FROM user_view_permission WHERE viewer_user_id = @uid",
                 new MySqlParameter("@uid", userId));
 
-            // ±ÇÇÑ ·¹ÄÚµå°¡ ¾øÀ¸¸é = ¸ğµç Á÷¿ø º¸±â
+            // ê¶Œí•œ ë ˆì½”ë“œê°€ ì—†ìœ¼ë©´ = ëª¨ë“  ì§ì› ë³´ê¸°
             if (dt.Rows.Count == 0)
             {
                 chkAllEmployees.Checked = true;
@@ -442,7 +452,7 @@ namespace DBP_team
             chkAllEmployees.Checked = false;
             clbDepartments.Enabled = true;
 
-            // ÀÌ »ç¿ëÀÚ°¡ °¡Áø dept_idµéÀ» HashSetÀ¸·Î
+            // ì´ ì‚¬ìš©ìê°€ ê°€ì§„ dept_idë“¤ì„ HashSetìœ¼ë¡œ
             var allowedDeptIds = dt.AsEnumerable()
                                    .Where(r => r["dept_id"] != DBNull.Value)
                                    .Select(r => Convert.ToInt32(r["dept_id"]))
@@ -467,7 +477,7 @@ namespace DBP_team
         {
             if (_selectedPermissionUserId == null)
             {
-                MessageBox.Show("»ç¿ëÀÚ¸¦ ¼±ÅÃÇÏ¼¼¿ä.");
+                MessageBox.Show("ì‚¬ìš©ìë¥¼ ì„ íƒí•˜ì„¸ìš”.");
                 return;
             }
 
@@ -479,7 +489,7 @@ namespace DBP_team
 
             if (chkAllEmployees.Checked)
             {
-                MessageBox.Show("ÀúÀåµÇ¾ú½À´Ï´Ù.");
+                MessageBox.Show("ì €ì¥ë˜ì—ˆìŠµë‹ˆë‹¤.");
                 return;
             }
 
@@ -496,12 +506,125 @@ namespace DBP_team
                     new MySqlParameter("@uid", uid),
                     new MySqlParameter("@deptId", deptId));
             }
-            MessageBox.Show("ÀúÀåµÇ¾ú½À´Ï´Ù.");
+            MessageBox.Show("ì €ì¥ë˜ì—ˆìŠµë‹ˆë‹¤.");
         }
 
         private void btnResetPermission_Click(object sender, EventArgs e)
         {
             ResetPermissionUI();
+
+        // --- Chat Ban Management ---
+        private void InitializeChatBanUI()
+        {
+            // Designer provides pageChatBan and controls; just bind data
+            if (pageChatBan == null) return;
+            LoadUserList();
+            LoadBanList();
+        }
+
+        private void LoadUserList()
+        {
+            var dt = DBManager.Instance.ExecuteDataTable(
+                "SELECT id, COALESCE(full_name,email) AS name FROM users WHERE company_id=@cid ORDER BY name",
+                new MySqlParameter("@cid", _companyId));
+
+            _cbUser1.DataSource = dt.Copy();
+            _cbUser1.DisplayMember = "name";
+            _cbUser1.ValueMember = "id";
+            _cbUser1.SelectedIndex = -1;
+
+            _cbUser2.DataSource = dt;
+            _cbUser2.DisplayMember = "name";
+            _cbUser2.ValueMember = "id";
+            _cbUser2.SelectedIndex = -1;
+        }
+
+        private void LoadBanList()
+        {
+            string sql = @"
+                SELECT b.id, b.user_id_1, b.user_id_2, b.created_at,
+                       u1.full_name AS name1, u2.full_name AS name2
+                FROM chat_bans b
+                JOIN users u1 ON u1.id = b.user_id_1
+                JOIN users u2 ON u2.id = b.user_id_2
+                WHERE u1.company_id = @cid OR u2.company_id = @cid
+                ORDER BY b.created_at DESC";
+
+            var dt = DBManager.Instance.ExecuteDataTable(sql, new MySqlParameter("@cid", _companyId));
+
+            _lvBans.BeginUpdate();
+            _lvBans.Items.Clear();
+            foreach (DataRow row in dt.Rows)
+            {
+                var item = new ListViewItem(Convert.ToString(row["name1"]))
+                {
+                    Tag = row["id"]
+                };
+                item.SubItems.Add(Convert.ToString(row["name2"]));
+                item.SubItems.Add(Convert.ToDateTime(row["created_at"]).ToString("yyyy-MM-dd HH:mm:ss"));
+                _lvBans.Items.Add(item);
+            }
+            _lvBans.EndUpdate();
+        }
+
+        private void btnBlock_Click(object sender, EventArgs e)
+        {
+            if (_cbUser1.SelectedIndex < 0 || _cbUser2.SelectedIndex < 0)
+            {
+                MessageBox.Show("ë‘ ì‚¬ìš©ìë¥¼ ì„ íƒí•˜ì„¸ìš”.");
+                return;
+            }
+
+            int uid1 = Convert.ToInt32(_cbUser1.SelectedValue);
+            int uid2 = Convert.ToInt32(_cbUser2.SelectedValue);
+            if (uid1 == uid2)
+            {
+                MessageBox.Show("ê°™ì€ ì‚¬ìš©ìë¼ë¦¬ëŠ” ì°¨ë‹¨í•  ìˆ˜ ì—†ìŠµë‹ˆë‹¤.");
+                return;
+            }
+
+            int a = Math.Min(uid1, uid2);
+            int b = Math.Max(uid1, uid2);
+
+            try
+            {
+                DBManager.Instance.ExecuteNonQuery(
+                    "INSERT INTO chat_bans (user_id_1, user_id_2, created_at) VALUES (@u1, @u2, @created)",
+                    new MySqlParameter("@u1", a),
+                    new MySqlParameter("@u2", b),
+                    new MySqlParameter("@created", DateTime.Now));
+
+                LoadBanList();
+            }
+            catch (MySqlException ex)
+            {
+                MessageBox.Show("ì°¨ë‹¨ ì¶”ê°€ ì¤‘ ì˜¤ë¥˜: " + ex.Message);
+            }
+        }
+
+        private void btnUnblock_Click(object sender, EventArgs e)
+        {
+            if (_lvBans.SelectedItems.Count == 0)
+            {
+                MessageBox.Show("í•´ì œí•  í•­ëª©ì„ ì„ íƒí•˜ì„¸ìš”.");
+                return;
+            }
+
+            var idObj = _lvBans.SelectedItems[0].Tag;
+            if (idObj == null) return;
+
+            int banId = Convert.ToInt32(idObj);
+            try
+            {
+                DBManager.Instance.ExecuteNonQuery(
+                    "DELETE FROM chat_bans WHERE id=@id",
+                    new MySqlParameter("@id", banId));
+                LoadBanList();
+            }
+            catch (MySqlException ex)
+            {
+                MessageBox.Show("ì°¨ë‹¨ í•´ì œ ì¤‘ ì˜¤ë¥˜: " + ex.Message);
+            }
         }
     }
 }

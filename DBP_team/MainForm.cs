@@ -236,6 +236,13 @@ namespace DBP_team
                         return;
                     }
 
+                    // ban check
+                    if (ChatBanDAO.IsChatBanned(_userId, otherId))
+                    {
+                        MessageBox.Show("관리자 정책에 의해 대화가 제한된 사용자입니다.");
+                        return;
+                    }
+
                     var chat = new ChatForm(_userId, otherId, otherDisplay);
                     chat.StartPosition = FormStartPosition.CenterParent;
                     chat.Show(this);
@@ -440,6 +447,13 @@ namespace DBP_team
 
             var otherDisplay = MultiProfileService.GetDisplayNameForViewer(otherId, _userId);
             if (string.IsNullOrWhiteSpace(otherDisplay)) otherDisplay = lvi.Text;
+            // ban check
+            if (ChatBanDAO.IsChatBanned(_userId, otherId))
+            {
+                MessageBox.Show("관리자 정책에 의해 대화가 제한된 사용자입니다.");
+                return;
+            }
+
             var chat = new ChatForm(_userId, otherId, otherDisplay);
             chat.StartPosition = FormStartPosition.CenterParent;
             chat.Show(this);
@@ -661,6 +675,26 @@ namespace DBP_team
                     item.ToolTipText = dept;
                     lvFavorites.Items.Add(item);
                 }
+
+                // 즐겨찾기가 비어있을 때 안내 텍스트 추가
+                if (lvFavorites.Items.Count == 0)
+                {
+                    var emptyItem = new ListViewItem("즐겨찾기가 비어있습니다")
+                    {
+                        ForeColor = Color.FromArgb(150, 150, 150),
+                        Font = new Font("맑은 고딕", 9F, FontStyle.Italic),
+                        Tag = null // 클릭 방지용
+                    };
+                    lvFavorites.Items.Add(emptyItem);
+
+                    var hintItem = new ListViewItem("부서 목록에서 직원을 우클릭하여 추가하세요")
+                    {
+                        ForeColor = Color.FromArgb(150, 150, 150),
+                        Font = new Font("맑은 고딕", 8F, FontStyle.Italic),
+                        Tag = null
+                    };
+                    lvFavorites.Items.Add(hintItem);
+                }
             }
             catch (Exception ex)
             {
@@ -728,6 +762,13 @@ namespace DBP_team
 
             var displayName = MultiProfileService.GetDisplayNameForViewer(targetUserId, _userId);
             if (string.IsNullOrWhiteSpace(displayName)) displayName = item.Text;
+
+            // ban check
+            if (ChatBanDAO.IsChatBanned(_userId, targetUserId))
+            {
+                MessageBox.Show("관리자 정책에 의해 대화가 제한된 사용자입니다.");
+                return;
+            }
 
             var chat = new ChatForm(_userId, targetUserId, displayName);
             chat.StartPosition = FormStartPosition.CenterParent;
@@ -847,6 +888,11 @@ namespace DBP_team
                 e.SuppressKeyPress = true; // 클릭 소리 방지
                 SearchUsers();
             }
+        }
+
+        private void lvFavorites_SelectedIndexChanged(object sender, EventArgs e)
+        {
+
         }
     }
 }

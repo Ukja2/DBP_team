@@ -85,6 +85,17 @@ namespace DBP_team
             this.btnSavePermission = new System.Windows.Forms.Button();
             this.btnResetPermission = new System.Windows.Forms.Button();
             this.lblSelectedUser = new System.Windows.Forms.Label();
+            this._gridLogs = new System.Windows.Forms.DataGridView();
+            this.pageChatBan = new System.Windows.Forms.TabPage();
+            this._pnlBanTop = new System.Windows.Forms.FlowLayoutPanel();
+            this.labelUserA = new System.Windows.Forms.Label();
+            this._cbUser1 = new System.Windows.Forms.ComboBox();
+            this.labelUserB = new System.Windows.Forms.Label();
+            this._cbUser2 = new System.Windows.Forms.ComboBox();
+            this._btnBlock = new System.Windows.Forms.Button();
+            this._btnUnblock = new System.Windows.Forms.Button();
+            this._lvBans = new System.Windows.Forms.ListView();
+
             this._tabs.SuspendLayout();
             this.pageDept.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this._gridDept)).BeginInit();
@@ -100,6 +111,8 @@ namespace DBP_team
             this.pnlSearch.SuspendLayout();
             this.pagePermission.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dgvUsers)).BeginInit();
+            this.pageChatBan.SuspendLayout();
+            this._pnlBanTop.SuspendLayout();
             this.SuspendLayout();
             // 
             // _tabs
@@ -109,6 +122,7 @@ namespace DBP_team
             this._tabs.Controls.Add(this.pageChat);
             this._tabs.Controls.Add(this.pageAccessLogs);
             this._tabs.Controls.Add(this.pagePermission);
+            this._tabs.Controls.Add(this.pageChatBan);
             this._tabs.Dock = System.Windows.Forms.DockStyle.Fill;
             this._tabs.Location = new System.Drawing.Point(0, 0);
             this._tabs.Name = "_tabs";
@@ -125,7 +139,7 @@ namespace DBP_team
             this.pageDept.Padding = new System.Windows.Forms.Padding(3);
             this.pageDept.Size = new System.Drawing.Size(1016, 687);
             this.pageDept.TabIndex = 0;
-            this.pageDept.Text = "∫Œº≠∞¸∏Æ";
+            this.pageDept.Text = "Î∂ÄÏÑúÍ¥ÄÎ¶¨";
             this.pageDept.UseVisualStyleBackColor = true;
             // 
             // _gridDept
@@ -166,12 +180,12 @@ namespace DBP_team
             // lblDeptName
             // 
             this.lblDeptName.AutoSize = true;
-            this.lblDeptName.Font = new System.Drawing.Font("∏º¿∫ ∞ÌµÒ", 9F);
+            this.lblDeptName.Font = new System.Drawing.Font("ÎßëÏùÄ Í≥†Îîï", 9F);
             this.lblDeptName.Location = new System.Drawing.Point(8, 12);
             this.lblDeptName.Name = "lblDeptName";
             this.lblDeptName.Size = new System.Drawing.Size(54, 20);
             this.lblDeptName.TabIndex = 0;
-            this.lblDeptName.Text = "∫Œº≠∏Ì";
+            this.lblDeptName.Text = "Î∂ÄÏÑúÎ™Ö";
             // 
             // _txtDeptName
             // 
@@ -186,7 +200,7 @@ namespace DBP_team
             this._btnDeptAdd.Name = "_btnDeptAdd";
             this._btnDeptAdd.Size = new System.Drawing.Size(80, 25);
             this._btnDeptAdd.TabIndex = 2;
-            this._btnDeptAdd.Text = "√ﬂ∞°";
+            this._btnDeptAdd.Text = "Ï∂îÍ∞Ä";
             this._btnDeptAdd.Click += new System.EventHandler(this.DeptAdd_Click);
             // 
             // _btnDeptUpdate
@@ -195,18 +209,18 @@ namespace DBP_team
             this._btnDeptUpdate.Name = "_btnDeptUpdate";
             this._btnDeptUpdate.Size = new System.Drawing.Size(80, 25);
             this._btnDeptUpdate.TabIndex = 3;
-            this._btnDeptUpdate.Text = "ºˆ¡§";
+            this._btnDeptUpdate.Text = "ÏàòÏ†ï";
             this._btnDeptUpdate.Click += new System.EventHandler(this.DeptUpdate_Click);
             // 
             // lblDeptSearch
             // 
             this.lblDeptSearch.AutoSize = true;
-            this.lblDeptSearch.Font = new System.Drawing.Font("∏º¿∫ ∞ÌµÒ", 9F);
+            this.lblDeptSearch.Font = new System.Drawing.Font("ÎßëÏùÄ Í≥†Îîï", 9F);
             this.lblDeptSearch.Location = new System.Drawing.Point(470, 12);
             this.lblDeptSearch.Name = "lblDeptSearch";
             this.lblDeptSearch.Size = new System.Drawing.Size(94, 20);
             this.lblDeptSearch.TabIndex = 4;
-            this.lblDeptSearch.Text = "∞Àªˆ(∫Œº≠∏Ì)";
+            this.lblDeptSearch.Text = "Í≤ÄÏÉâ(Î∂ÄÏÑúÎ™Ö)";
             // 
             // _txtDeptSearch
             // 
@@ -221,7 +235,7 @@ namespace DBP_team
             this._btnDeptSearch.Name = "_btnDeptSearch";
             this._btnDeptSearch.Size = new System.Drawing.Size(80, 25);
             this._btnDeptSearch.TabIndex = 6;
-            this._btnDeptSearch.Text = "∞Àªˆ";
+            this._btnDeptSearch.Text = "Í≤ÄÏÉâ";
             this._btnDeptSearch.Click += new System.EventHandler(this.DeptSearch_Click);
             // 
             // pageUserDept
@@ -233,7 +247,7 @@ namespace DBP_team
             this.pageUserDept.Padding = new System.Windows.Forms.Padding(3);
             this.pageUserDept.Size = new System.Drawing.Size(1016, 687);
             this.pageUserDept.TabIndex = 1;
-            this.pageUserDept.Text = "ªÁøÎ¿⁄ º“º” ∞¸∏Æ";
+            this.pageUserDept.Text = "ÏÇ¨Ïö©Ïûê ÏÜåÏÜç Í¥ÄÎ¶¨";
             this.pageUserDept.UseVisualStyleBackColor = true;
             // 
             // _gridUsers
@@ -271,12 +285,12 @@ namespace DBP_team
             // lblUserSearch
             // 
             this.lblUserSearch.AutoSize = true;
-            this.lblUserSearch.Font = new System.Drawing.Font("∏º¿∫ ∞ÌµÒ", 9F);
+            this.lblUserSearch.Font = new System.Drawing.Font("ÎßëÏùÄ Í≥†Îîï", 9F);
             this.lblUserSearch.Location = new System.Drawing.Point(8, 12);
             this.lblUserSearch.Name = "lblUserSearch";
             this.lblUserSearch.Size = new System.Drawing.Size(89, 20);
             this.lblUserSearch.TabIndex = 0;
-            this.lblUserSearch.Text = "ªÁøÎ¿⁄ ∞Àªˆ";
+            this.lblUserSearch.Text = "ÏÇ¨Ïö©Ïûê Í≤ÄÏÉâ";
             // 
             // _txtUserSearch
             // 
@@ -291,18 +305,18 @@ namespace DBP_team
             this._btnUserSearch.Name = "_btnUserSearch";
             this._btnUserSearch.Size = new System.Drawing.Size(80, 25);
             this._btnUserSearch.TabIndex = 2;
-            this._btnUserSearch.Text = "∞Àªˆ";
+            this._btnUserSearch.Text = "Í≤ÄÏÉâ";
             this._btnUserSearch.Click += new System.EventHandler(this.UserSearch_Click);
             // 
             // lblDeptSelect
             // 
             this.lblDeptSelect.AutoSize = true;
-            this.lblDeptSelect.Font = new System.Drawing.Font("∏º¿∫ ∞ÌµÒ", 9F);
+            this.lblDeptSelect.Font = new System.Drawing.Font("ÎßëÏùÄ Í≥†Îîï", 9F);
             this.lblDeptSelect.Location = new System.Drawing.Point(420, 12);
             this.lblDeptSelect.Name = "lblDeptSelect";
             this.lblDeptSelect.Size = new System.Drawing.Size(74, 20);
             this.lblDeptSelect.TabIndex = 3;
-            this.lblDeptSelect.Text = "∫Œº≠ º±≈√";
+            this.lblDeptSelect.Text = "Î∂ÄÏÑú ÏÑ†ÌÉù";
             // 
             // _cboDeptForUser
             // 
@@ -318,7 +332,7 @@ namespace DBP_team
             this._btnApplyDept.Name = "_btnApplyDept";
             this._btnApplyDept.Size = new System.Drawing.Size(180, 25);
             this._btnApplyDept.TabIndex = 5;
-            this._btnApplyDept.Text = "º±≈√µ» ªÁøÎ¿⁄ º“º” ∫Ø∞Ê";
+            this._btnApplyDept.Text = "ÏÑ†ÌÉùÎêú ÏÇ¨Ïö©Ïûê ÏÜåÏÜç Î≥ÄÍ≤Ω";
             this._btnApplyDept.Click += new System.EventHandler(this.ApplyDept_Click);
             // 
             // pageChat
@@ -330,7 +344,7 @@ namespace DBP_team
             this.pageChat.Padding = new System.Windows.Forms.Padding(3);
             this.pageChat.Size = new System.Drawing.Size(1016, 687);
             this.pageChat.TabIndex = 2;
-            this.pageChat.Text = "¥Î»≠ ∞Àªˆ";
+            this.pageChat.Text = "ÎåÄÌôî Í≤ÄÏÉâ";
             this.pageChat.UseVisualStyleBackColor = true;
             // 
             // _gridChat
@@ -372,12 +386,12 @@ namespace DBP_team
             // lblFrom
             // 
             this.lblFrom.AutoSize = true;
-            this.lblFrom.Font = new System.Drawing.Font("∏º¿∫ ∞ÌµÒ", 9F);
+            this.lblFrom.Font = new System.Drawing.Font("ÎßëÏùÄ Í≥†Îîï", 9F);
             this.lblFrom.Location = new System.Drawing.Point(8, 12);
             this.lblFrom.Name = "lblFrom";
             this.lblFrom.Size = new System.Drawing.Size(54, 20);
             this.lblFrom.TabIndex = 0;
-            this.lblFrom.Text = "Ω√¿€¿œ";
+            this.lblFrom.Text = "ÏãúÏûëÏùº";
             // 
             // _dtFrom
             // 
@@ -389,12 +403,12 @@ namespace DBP_team
             // lblTo
             // 
             this.lblTo.AutoSize = true;
-            this.lblTo.Font = new System.Drawing.Font("∏º¿∫ ∞ÌµÒ", 9F);
+            this.lblTo.Font = new System.Drawing.Font("ÎßëÏùÄ Í≥†Îîï", 9F);
             this.lblTo.Location = new System.Drawing.Point(210, 12);
             this.lblTo.Name = "lblTo";
             this.lblTo.Size = new System.Drawing.Size(54, 20);
             this.lblTo.TabIndex = 2;
-            this.lblTo.Text = "¡æ∑·¿œ";
+            this.lblTo.Text = "Ï¢ÖÎ£åÏùº";
             // 
             // _dtTo
             // 
@@ -406,12 +420,12 @@ namespace DBP_team
             // lblKeyword
             // 
             this.lblKeyword.AutoSize = true;
-            this.lblKeyword.Font = new System.Drawing.Font("∏º¿∫ ∞ÌµÒ", 9F);
+            this.lblKeyword.Font = new System.Drawing.Font("ÎßëÏùÄ Í≥†Îîï", 9F);
             this.lblKeyword.Location = new System.Drawing.Point(410, 12);
             this.lblKeyword.Name = "lblKeyword";
             this.lblKeyword.Size = new System.Drawing.Size(54, 20);
             this.lblKeyword.TabIndex = 4;
-            this.lblKeyword.Text = "≈∞øˆµÂ";
+            this.lblKeyword.Text = "ÌÇ§ÏõåÎìú";
             // 
             // _txtKeyword
             // 
@@ -423,12 +437,12 @@ namespace DBP_team
             // lblUser
             // 
             this.lblUser.AutoSize = true;
-            this.lblUser.Font = new System.Drawing.Font("∏º¿∫ ∞ÌµÒ", 9F);
+            this.lblUser.Font = new System.Drawing.Font("ÎßëÏùÄ Í≥†Îîï", 9F);
             this.lblUser.Location = new System.Drawing.Point(685, 12);
             this.lblUser.Name = "lblUser";
             this.lblUser.Size = new System.Drawing.Size(54, 20);
             this.lblUser.TabIndex = 6;
-            this.lblUser.Text = "ªÁøÎ¿⁄";
+            this.lblUser.Text = "ÏÇ¨Ïö©Ïûê";
             // 
             // _cboUserFilter
             // 
@@ -444,7 +458,7 @@ namespace DBP_team
             this._btnChatSearch.Name = "_btnChatSearch";
             this._btnChatSearch.Size = new System.Drawing.Size(60, 25);
             this._btnChatSearch.TabIndex = 8;
-            this._btnChatSearch.Text = "∞Àªˆ";
+            this._btnChatSearch.Text = "Í≤ÄÏÉâ";
             this._btnChatSearch.Click += new System.EventHandler(this.ChatSearch_Click);
             // 
             // pageAccessLogs
@@ -456,7 +470,7 @@ namespace DBP_team
             this.pageAccessLogs.Padding = new System.Windows.Forms.Padding(3);
             this.pageAccessLogs.Size = new System.Drawing.Size(1016, 687);
             this.pageAccessLogs.TabIndex = 3;
-            this.pageAccessLogs.Text = "¡¢º” ¿Ã∑¬";
+            this.pageAccessLogs.Text = "Ï†ëÏÜç Ïù¥Î†•";
             this.pageAccessLogs.UseVisualStyleBackColor = true;
             // 
             // _gridLogs
@@ -498,13 +512,13 @@ namespace DBP_team
             // 
             this.lblDate.Anchor = System.Windows.Forms.AnchorStyles.Left;
             this.lblDate.AutoSize = true;
-            this.lblDate.Font = new System.Drawing.Font("∏º¿∫ ∞ÌµÒ", 9F);
+            this.lblDate.Font = new System.Drawing.Font("ÎßëÏùÄ Í≥†Îîï", 9F);
             this.lblDate.Location = new System.Drawing.Point(11, 16);
             this.lblDate.Margin = new System.Windows.Forms.Padding(3, 6, 0, 3);
             this.lblDate.Name = "lblDate";
             this.lblDate.Size = new System.Drawing.Size(42, 20);
             this.lblDate.TabIndex = 0;
-            this.lblDate.Text = "±‚∞£:";
+            this.lblDate.Text = "Í∏∞Í∞Ñ:";
             // 
             // dtpStart
             // 
@@ -539,13 +553,13 @@ namespace DBP_team
             // 
             this.lblUser_log.Anchor = System.Windows.Forms.AnchorStyles.Left;
             this.lblUser_log.AutoSize = true;
-            this.lblUser_log.Font = new System.Drawing.Font("∏º¿∫ ∞ÌµÒ", 9F);
+            this.lblUser_log.Font = new System.Drawing.Font("ÎßëÏùÄ Í≥†Îîï", 9F);
             this.lblUser_log.Location = new System.Drawing.Point(303, 16);
             this.lblUser_log.Margin = new System.Windows.Forms.Padding(15, 6, 0, 3);
             this.lblUser_log.Name = "lblUser_log";
             this.lblUser_log.Size = new System.Drawing.Size(57, 20);
             this.lblUser_log.TabIndex = 4;
-            this.lblUser_log.Text = "ªÁøÎ¿⁄:";
+            this.lblUser_log.Text = "ÏÇ¨Ïö©Ïûê:";
             // 
             // txtSearchUser
             // 
@@ -561,7 +575,7 @@ namespace DBP_team
             this.btnSearchLog.Name = "btnSearchLog";
             this.btnSearchLog.Size = new System.Drawing.Size(80, 25);
             this.btnSearchLog.TabIndex = 6;
-            this.btnSearchLog.Text = "∞Àªˆ";
+            this.btnSearchLog.Text = "Í≤ÄÏÉâ";
             this.btnSearchLog.Click += new System.EventHandler(this.SearchLog_Click);
             // 
             // pagePermission
@@ -579,7 +593,7 @@ namespace DBP_team
             this.pagePermission.Padding = new System.Windows.Forms.Padding(3);
             this.pagePermission.Size = new System.Drawing.Size(1016, 687);
             this.pagePermission.TabIndex = 4;
-            this.pagePermission.Text = "±««— º≥¡§";
+            this.pagePermission.Text = "Í∂åÌïú ÏÑ§Ï†ï";
             this.pagePermission.UseVisualStyleBackColor = true;
             // 
             // label1
@@ -589,7 +603,7 @@ namespace DBP_team
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(89, 20);
             this.label1.TabIndex = 0;
-            this.label1.Text = "ªÁøÎ¿⁄ º±≈√";
+            this.label1.Text = "ÏÇ¨Ïö©Ïûê ÏÑ†ÌÉù";
             // 
             // dgvUsers
             // 
@@ -610,7 +624,7 @@ namespace DBP_team
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(74, 20);
             this.label2.TabIndex = 2;
-            this.label2.Text = "±««— º≥¡§";
+            this.label2.Text = "Í∂åÌïú ÏÑ§Ï†ï";
             // 
             // chkAllEmployees
             // 
@@ -619,7 +633,7 @@ namespace DBP_team
             this.chkAllEmployees.Name = "chkAllEmployees";
             this.chkAllEmployees.Size = new System.Drawing.Size(131, 24);
             this.chkAllEmployees.TabIndex = 0;
-            this.chkAllEmployees.Text = "∏µÁ ¡˜ø¯ ∫∏±‚";
+            this.chkAllEmployees.Text = "Î™®Îì† ÏßÅÏõê Î≥¥Í∏∞";
             this.chkAllEmployees.UseVisualStyleBackColor = true;
             this.chkAllEmployees.CheckedChanged += new System.EventHandler(this.chkAllEmployees_CheckedChanged);
             // 
@@ -637,7 +651,7 @@ namespace DBP_team
             this.btnSavePermission.Name = "btnSavePermission";
             this.btnSavePermission.Size = new System.Drawing.Size(82, 33);
             this.btnSavePermission.TabIndex = 5;
-            this.btnSavePermission.Text = "¿˙¿Â";
+            this.btnSavePermission.Text = "Ï†ÄÏû•";
             this.btnSavePermission.UseVisualStyleBackColor = true;
             this.btnSavePermission.Click += new System.EventHandler(this.btnSavePermission_Click);
             // 
@@ -647,7 +661,7 @@ namespace DBP_team
             this.btnResetPermission.Name = "btnResetPermission";
             this.btnResetPermission.Size = new System.Drawing.Size(82, 33);
             this.btnResetPermission.TabIndex = 6;
-            this.btnResetPermission.Text = "√ ±‚»≠";
+            this.btnResetPermission.Text = "Ï¥àÍ∏∞Ìôî";
             this.btnResetPermission.UseVisualStyleBackColor = true;
             this.btnResetPermission.Click += new System.EventHandler(this.btnResetPermission_Click);
             // 
@@ -658,7 +672,71 @@ namespace DBP_team
             this.lblSelectedUser.Name = "lblSelectedUser";
             this.lblSelectedUser.Size = new System.Drawing.Size(142, 20);
             this.lblSelectedUser.TabIndex = 7;
-            this.lblSelectedUser.Text = "º±≈√µ» ªÁøÎ¿⁄: æ¯¿Ω";
+            this.lblSelectedUser.Text = "ÏÑ†ÌÉùÎêú ÏÇ¨Ïö©Ïûê: ÏóÜÏùå";
+            // 
+            // pageChatBan
+            // 
+            this.pageChatBan.Controls.Add(this._lvBans);
+            this.pageChatBan.Controls.Add(this._pnlBanTop);
+            this.pageChatBan.Location = new System.Drawing.Point(4, 24);
+            this.pageChatBan.Name = "pageChatBan";
+            this.pageChatBan.Padding = new System.Windows.Forms.Padding(3);
+            this.pageChatBan.Size = new System.Drawing.Size(1016, 692);
+            this.pageChatBan.TabIndex = 4;
+            this.pageChatBan.Text = "ÎåÄÌôî Í∂åÌïú Í¥ÄÎ¶¨";
+            this.pageChatBan.UseVisualStyleBackColor = true;
+
+            // 
+            // _pnlBanTop
+            // 
+            this._pnlBanTop.Dock = System.Windows.Forms.DockStyle.Top;
+            this._pnlBanTop.Padding = new System.Windows.Forms.Padding(8);
+            this._pnlBanTop.Height = 60;
+            this._pnlBanTop.BackColor = System.Drawing.Color.FromArgb(250, 250, 250);
+            this._pnlBanTop.Controls.Add(this.labelUserA);
+            this._pnlBanTop.Controls.Add(this._cbUser1);
+            this._pnlBanTop.Controls.Add(this.labelUserB);
+            this._pnlBanTop.Controls.Add(this._cbUser2);
+            this._pnlBanTop.Controls.Add(this._btnBlock);
+            this._pnlBanTop.Controls.Add(this._btnUnblock);
+
+            this.labelUserA.AutoSize = true;
+            this.labelUserA.Text = "ÏÇ¨Ïö©Ïûê A";
+            this.labelUserA.Margin = new System.Windows.Forms.Padding(3, 8, 3, 3);
+
+            this._cbUser1.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this._cbUser1.Width = 220;
+
+            this.labelUserB.AutoSize = true;
+            this.labelUserB.Text = "ÏÇ¨Ïö©Ïûê B";
+            this.labelUserB.Margin = new System.Windows.Forms.Padding(15, 8, 3, 3);
+
+            this._cbUser2.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this._cbUser2.Width = 220;
+
+            this._btnBlock.Text = "Ï∞®Îã®ÌïòÍ∏∞";
+            this._btnBlock.Width = 100;
+            this._btnBlock.Height = 25;
+            this._btnBlock.Margin = new System.Windows.Forms.Padding(15, 6, 3, 3);
+            this._btnBlock.Click += new System.EventHandler(this.btnBlock_Click);
+
+            this._btnUnblock.Text = "Ï∞®Îã® Ìï¥Ï†ú";
+            this._btnUnblock.Width = 100;
+            this._btnUnblock.Height = 25;
+            this._btnUnblock.Margin = new System.Windows.Forms.Padding(8, 6, 3, 3);
+            this._btnUnblock.Click += new System.EventHandler(this.btnUnblock_Click);
+
+            // 
+            // _lvBans
+            // 
+            this._lvBans.Dock = System.Windows.Forms.DockStyle.Fill;
+            this._lvBans.View = System.Windows.Forms.View.Details;
+            this._lvBans.FullRowSelect = true;
+            this._lvBans.HideSelection = false;
+            this._lvBans.Columns.Add("ÏÇ¨Ïö©Ïûê A", 200);
+            this._lvBans.Columns.Add("ÏÇ¨Ïö©Ïûê B", 200);
+            this._lvBans.Columns.Add("Ï∞®Îã® ÏãúÍ∞Å", 180);
+
             // 
             // AdminForm
             // 
@@ -667,10 +745,10 @@ namespace DBP_team
             this.BackColor = System.Drawing.Color.White;
             this.ClientSize = new System.Drawing.Size(1024, 720);
             this.Controls.Add(this._tabs);
-            this.Font = new System.Drawing.Font("∏º¿∫ ∞ÌµÒ", 9F);
+            this.Font = new System.Drawing.Font("ÎßëÏùÄ Í≥†Îîï", 9F);
             this.Name = "AdminForm";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.Text = "DBP Talk - ∞¸∏Æ¿⁄ ƒ‹º÷";
+            this.Text = "DBP Talk - Í¥ÄÎ¶¨Ïûê ÏΩòÏÜî";
             this.Load += new System.EventHandler(this.AdminForm_Load);
             this._tabs.ResumeLayout(false);
             this.pageDept.ResumeLayout(false);
@@ -692,6 +770,10 @@ namespace DBP_team
             this.pagePermission.ResumeLayout(false);
             this.pagePermission.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dgvUsers)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this._gridLogs)).EndInit();
+            this.pageChatBan.ResumeLayout(false);
+            this._pnlBanTop.ResumeLayout(false);
+            this._pnlBanTop.PerformLayout();
             this.ResumeLayout(false);
 
         }
@@ -749,5 +831,14 @@ namespace DBP_team
         private Button btnSavePermission;
         private CheckedListBox clbDepartments;
         private Label lblSelectedUser;
+        private System.Windows.Forms.TabPage pageChatBan;
+        private System.Windows.Forms.FlowLayoutPanel _pnlBanTop;
+        private System.Windows.Forms.ComboBox _cbUser1;
+        private System.Windows.Forms.ComboBox _cbUser2;
+        private System.Windows.Forms.Button _btnBlock;
+        private System.Windows.Forms.Button _btnUnblock;
+        private System.Windows.Forms.ListView _lvBans;
+        private System.Windows.Forms.Label labelUserA;
+        private System.Windows.Forms.Label labelUserB;
     }
 }

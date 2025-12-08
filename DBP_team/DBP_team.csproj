@@ -110,6 +110,7 @@
     <Compile Include="AdminGuard.cs" />
     <Compile Include="AppSession.cs" />
     <Compile Include="AuthService.cs" />
+    <Compile Include="ChatBanDAO.cs" />
     <Compile Include="ChatForm.cs">
       <SubType>Form</SubType>
     </Compile>

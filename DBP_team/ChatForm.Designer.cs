@@ -73,6 +73,7 @@
             // 
             // txtChat
             // 
+            this.txtChat.Multiline = true;
             this.txtChat.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
             | System.Windows.Forms.AnchorStyles.Right)));
             this.txtChat.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
