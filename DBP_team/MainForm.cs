@@ -300,12 +300,16 @@ namespace DBP_team
                     return;
                 }
 
+                // 권한 서비스로 현재 로그인 사용자가 볼 수 있는 직원 전체 목록을 한 번만 조회
+                var dtVisible = Models.EmployeePermissionService.LoadVisibleEmployees(_userId, _companyId);
+
                 foreach (DataRow dep in dtDeps.Rows)
                 {
                     int depId = Convert.ToInt32(dep["id"]);
                     string depName = dep["name"]?.ToString() ?? $"부서 {depId}";
                     var depNode = new TreeNode(depName) { Tag = $"department:{depId}", ImageIndex = IMG_WHITE, SelectedImageIndex = IMG_WHITE };
 
+                    // 팀 목록
                     var dtTeams = DBManager.Instance.ExecuteDataTable(
                         "SELECT id, name FROM teams WHERE department_id = @did ORDER BY name",
                         new MySqlParameter("@did", depId));
@@ -318,20 +322,16 @@ namespace DBP_team
                             string teamName = team["name"]?.ToString() ?? $"팀 {teamId}";
                             var teamNode = new TreeNode(teamName) { Tag = $"team:{teamId}", ImageIndex = IMG_WHITE, SelectedImageIndex = IMG_WHITE };
 
-                            var dtUsersInTeam = DBManager.Instance.ExecuteDataTable(
-                                "SELECT id, full_name, email FROM users WHERE company_id = @cid AND department_id = @did AND team_id = @tid ORDER BY full_name",
-                                new MySqlParameter("@cid", _companyId),
-                                new MySqlParameter("@did", depId),
-                                new MySqlParameter("@tid", teamId));
-
-                            if (dtUsersInTeam != null && dtUsersInTeam.Rows.Count > 0)
+                            // dtVisible에서 해당 부서+팀 사용자만 추가
+                            if (dtVisible != null && dtVisible.Rows.Count > 0)
                             {
-                                foreach (DataRow u in dtUsersInTeam.Rows)
+                                string expr = $"department_id = {depId} AND team_id = {teamId}";
+                                DataRow[] rows = dtVisible.Select(expr);
+                                foreach (var u in rows)
                                 {
                                     int uid = Convert.ToInt32(u["id"]);
                                     if (uid == _userId) continue;
-
-                                    var baseDisplay = u["full_name"]?.ToString();
+                                    var baseDisplay = u["name"]?.ToString();
                                     if (string.IsNullOrWhiteSpace(baseDisplay)) baseDisplay = u["email"]?.ToString() ?? "이름 없음";
                                     var mpDisplay = MultiProfileService.GetDisplayNameForViewer(uid, _userId);
                                     if (!string.IsNullOrWhiteSpace(mpDisplay)) baseDisplay = mpDisplay;
@@ -350,19 +350,16 @@ namespace DBP_team
                         }
                     }
 
-                    var dtUsersNoTeam = DBManager.Instance.ExecuteDataTable(
-                        "SELECT id, full_name, email FROM users WHERE company_id = @cid AND department_id = @did AND (team_id IS NULL OR team_id = 0) ORDER BY full_name",
-                        new MySqlParameter("@cid", _companyId),
-                        new MySqlParameter("@did", depId));
-
-                    if (dtUsersNoTeam != null && dtUsersNoTeam.Rows.Count > 0)
+                    // 팀에 속하지 않은 사용자들 (team_id IS NULL OR 0)
+                    if (dtVisible != null && dtVisible.Rows.Count > 0)
                     {
-                        foreach (DataRow u in dtUsersNoTeam.Rows)
+                        string exprNoTeam = $"department_id = {depId} AND (team_id IS NULL OR team_id = 0)";
+                        DataRow[] noTeamRows = dtVisible.Select(exprNoTeam);
+                        foreach (var u in noTeamRows)
                         {
                             int uid = Convert.ToInt32(u["id"]);
                             if (uid == _userId) continue;
-
-                            var baseDisplay = u["full_name"]?.ToString();
+                            var baseDisplay = u["name"]?.ToString();
                             if (string.IsNullOrWhiteSpace(baseDisplay)) baseDisplay = u["email"]?.ToString() ?? "이름 없음";
                             var mpDisplay = MultiProfileService.GetDisplayNameForViewer(uid, _userId);
                             if (!string.IsNullOrWhiteSpace(mpDisplay)) baseDisplay = mpDisplay;

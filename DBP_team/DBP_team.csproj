@@ -137,6 +137,7 @@
       <DependentUpon>MainForm.cs</DependentUpon>
     </Compile>
     <Compile Include="Models\ChatMessage.cs" />
+    <Compile Include="Models\EmployeePermissionService.cs" />
     <Compile Include="Models\User.cs" />
     <Compile Include="MultiProfileService.cs" />
     <Compile Include="ProfileForm.cs">
@@ -167,6 +168,9 @@
     </Compile>
     <EmbeddedResource Include="AddressSearchForm.resx">
       <DependentUpon>AddressSearchForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="AdminForm.resx">
+      <DependentUpon>AdminForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="ChatForm.resx">
       <DependentUpon>ChatForm.cs</DependentUpon>
