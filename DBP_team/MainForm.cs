@@ -889,18 +889,29 @@ namespace DBP_team
 
                 // --- SQL 쿼리 수정 ---
                 const string sql = @"
-                    SELECT u.id, u.full_name, u.email, d.name AS department_name
+                    SELECT u.id, u.full_name, u.email, d.name AS department_name, mpm.display_name AS mp_display
                     FROM users u
                     LEFT JOIN departments d ON u.department_id = d.id
-                    WHERE CAST(u.id AS CHAR) LIKE @keyword_wildcard
-                       OR u.full_name LIKE @keyword_wildcard
-                       OR u.email LIKE @keyword_wildcard
-                       OR d.name LIKE @keyword_wildcard
+                    LEFT JOIN multi_profile_map mpm ON mpm.owner_user_id = u.id AND mpm.target_user_id = @me
+                    WHERE (
+                        mpm.display_name IS NOT NULL
+                        AND mpm.display_name LIKE @keyword_wildcard
+                    ) OR (
+                        mpm.display_name IS NULL
+                        AND (
+                            CAST(u.id AS CHAR) LIKE @keyword_wildcard
+                            OR u.full_name LIKE @keyword_wildcard
+                            OR u.email LIKE @keyword_wildcard
+                            OR d.name LIKE @keyword_wildcard
+                        )
+                    )
                     ORDER BY d.name, u.full_name;";
 
                 try
                 {
-                    var dt = DBManager.Instance.ExecuteDataTable(sql, new MySqlParameter("@keyword_wildcard", $"%{keyword}%"));
+                    var dt = DBManager.Instance.ExecuteDataTable(sql,
+                        new MySqlParameter("@keyword_wildcard", $"%{keyword}%"),
+                        new MySqlParameter("@me", _userId));
 
                     if (dt != null && dt.Rows.Count > 0)
                     {
@@ -911,9 +922,13 @@ namespace DBP_team
                             // 권한: 숨겨진 사용자는 검색 결과에서 제외
                             if (!IsUserVisible(uid)) continue;
 
-                            string baseDisplay = row["full_name"]?.ToString() ?? row["email"]?.ToString() ?? "이름 없음";
-                            var mpDisplay = MultiProfileService.GetDisplayNameForViewer(uid, _userId);
-                            if (!string.IsNullOrWhiteSpace(mpDisplay)) baseDisplay = mpDisplay;
+                            string mpDisplay = null;
+                            if (row.Table.Columns.Contains("mp_display") && row["mp_display"] != DBNull.Value)
+                                mpDisplay = row["mp_display"]?.ToString();
+
+                            string baseDisplay = !string.IsNullOrWhiteSpace(mpDisplay)
+                                ? mpDisplay
+                                : (row["full_name"]?.ToString() ?? row["email"]?.ToString() ?? "이름 없음");
 
                             string deptName = row["department_name"]?.ToString();
                             string nodeText = string.IsNullOrEmpty(deptName) ? baseDisplay : $"{baseDisplay} ({deptName})";
