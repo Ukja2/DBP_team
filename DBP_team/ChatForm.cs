@@ -94,6 +94,18 @@ namespace DBP_team
 
             // ensure search UI is initialized label
             lblSearchCount.Text = "0/0";
+
+            // 엔터키로 전송 (Shift+Enter는 줄바꿈)
+            txtChat.KeyDown += (s, e) =>
+            {
+                if (e.KeyCode == Keys.Enter && !e.Shift)
+                {
+                    e.Handled = true;
+                    e.SuppressKeyPress = true;
+                    btnSend.PerformClick(); // 엔터만: 전송
+                }
+                // Shift + Enter: 아무것도 안 함 (자동으로 줄바꿈됨)
+            };
         }
 
         private void ConnectToChatServer()
