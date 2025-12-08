@@ -17,6 +17,7 @@ namespace DBP_team
 
             txtPwd.UseSystemPasswordChar = true;
 
+            SetupEnterKeyHandling();
         }
 
         private void Form1_Load(object sender, EventArgs e)
@@ -71,37 +72,8 @@ namespace DBP_team
         {
             var reg = new Registerform();
 
-            // 기존 위치/크기 유지
-            reg.StartPosition = FormStartPosition.Manual;
-            reg.Size = this.Size;
-            var desired = this.Location;
-            var screen = Screen.FromControl(this);
-            var bounds = screen.WorkingArea;
-
-            if (desired.X < bounds.Left) desired.X = bounds.Left;
-            if (desired.X + reg.Width > bounds.Right) desired.X = Math.Max(bounds.Left, bounds.Right - reg.Width);
-            if (desired.Y < bounds.Top) desired.Y = bounds.Top;
-            if (desired.Y + reg.Height > bounds.Bottom) desired.Y = Math.Max(bounds.Top, bounds.Bottom - reg.Height);
-
-            reg.Location = desired;
-
             reg.FormClosed += (s, args) =>
             {
-                this.StartPosition = FormStartPosition.Manual;
-                this.Size = reg.Size;
-
-                var desiredBack = reg.Location;
-                var screenBack = Screen.FromControl(this);
-                var boundsBack = screenBack.WorkingArea;
-
-                if (desiredBack.X < boundsBack.Left) desiredBack.X = boundsBack.Left;
-                if (desiredBack.X + this.Width > boundsBack.Right) desiredBack.X = Math.Max(boundsBack.Left, boundsBack.Right - this.Width);
-
-                if (desiredBack.Y < boundsBack.Top) desiredBack.Y = boundsBack.Top;
-                if (desiredBack.Y + this.Height > boundsBack.Bottom) desiredBack.Y = Math.Max(boundsBack.Top, boundsBack.Bottom - this.Height);
-
-                this.Location = desiredBack;
-
                 this.Show();
                 reg.Dispose();
             };
@@ -222,6 +194,24 @@ namespace DBP_team
 
             Properties.Settings.Default.Save();
         }
+
+        private void SetupEnterKeyHandling()
+        {
+            // 폼의 기본 버튼을 로그인 버튼으로 설정 (어디서든 엔터 = 로그인)
+            this.AcceptButton = this.btnLogin;
+
+            // 아이디 입력창에서 엔터 → 비밀번호로 포커스 이동
+            txtId.KeyDown += (s, e) =>
+            {
+                if (e.KeyCode == Keys.Enter)
+                {
+                    e.Handled = true;
+                    e.SuppressKeyPress = true; // 띵 소리 방지
+                    txtPwd.Focus();
+                }
+            };
+        }
+
         private bool _passwordVisible = false;
         private void btnTogglePwd_Click(object sender, EventArgs e)
         {

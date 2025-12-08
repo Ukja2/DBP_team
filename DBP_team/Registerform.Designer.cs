@@ -56,7 +56,7 @@
             this.label1.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(50)))), ((int)(((byte)(50)))), ((int)(((byte)(50)))));
             this.label1.Location = new System.Drawing.Point(140, 30);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(163, 45);
+            this.label1.Size = new System.Drawing.Size(148, 45);
             this.label1.TabIndex = 4;
             this.label1.Text = "회원가입";
             this.label1.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -145,7 +145,7 @@
             this.linkRegister.LinkColor = System.Drawing.Color.FromArgb(((int)(((byte)(74)))), ((int)(((byte)(144)))), ((int)(((byte)(226)))));
             this.linkRegister.Location = new System.Drawing.Point(195, 650);
             this.linkRegister.Name = "linkRegister";
-            this.linkRegister.Size = new System.Drawing.Size(55, 15);
+            this.linkRegister.Size = new System.Drawing.Size(43, 15);
             this.linkRegister.TabIndex = 11;
             this.linkRegister.TabStop = true;
             this.linkRegister.Text = "로그인";
@@ -273,9 +273,8 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.AutoScroll = true;
             this.BackColor = System.Drawing.Color.White;
-            this.ClientSize = new System.Drawing.Size(460, 750);
+            this.ClientSize = new System.Drawing.Size(40, 711);
             this.Controls.Add(this.btnChooseImage);
             this.Controls.Add(this.pictureProfile);
             this.Controls.Add(this.txtAddressDetail);
@@ -295,10 +294,10 @@
             this.Controls.Add(this.label1);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
+            this.MinimumSize = new System.Drawing.Size(455, 750);
             this.Name = "Registerform";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "DBP Talk - 회원가입";
-            this.Load += new System.EventHandler(this.formRegister_Load);
             ((System.ComponentModel.ISupportInitialize)(this.pictureProfile)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();

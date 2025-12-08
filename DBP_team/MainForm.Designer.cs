@@ -75,7 +75,7 @@
             // 
             // txtSearch
             // 
-            this.txtSearch.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
+            this.txtSearch.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.txtSearch.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.txtSearch.Font = new System.Drawing.Font("맑은 고딕", 10F);
@@ -105,10 +105,10 @@
             // 
             // splitDepartmentsFavorites
             // 
-            this.splitDepartmentsFavorites.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
-            | System.Windows.Forms.AnchorStyles.Left)
+            this.splitDepartmentsFavorites.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.splitDepartmentsFavorites.Location = new System.Drawing.Point(12, 310);
+            this.splitDepartmentsFavorites.Location = new System.Drawing.Point(12, 305);
             this.splitDepartmentsFavorites.Name = "splitDepartmentsFavorites";
             this.splitDepartmentsFavorites.Orientation = System.Windows.Forms.Orientation.Horizontal;
             // 
@@ -140,12 +140,12 @@
             this.cmsTreeUser.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.miAddFavorite});
             this.cmsTreeUser.Name = "cmsTreeUser";
-            this.cmsTreeUser.Size = new System.Drawing.Size(160, 26);
+            this.cmsTreeUser.Size = new System.Drawing.Size(151, 26);
             // 
             // miAddFavorite
             // 
             this.miAddFavorite.Name = "miAddFavorite";
-            this.miAddFavorite.Size = new System.Drawing.Size(159, 22);
+            this.miAddFavorite.Size = new System.Drawing.Size(150, 22);
             this.miAddFavorite.Text = "즐겨찾기 추가";
             this.miAddFavorite.Click += new System.EventHandler(this.FavoriteSelectedDepartmentNode);
             // 
@@ -163,6 +163,7 @@
             this.lvFavorites.TabIndex = 0;
             this.lvFavorites.UseCompatibleStateImageBehavior = false;
             this.lvFavorites.View = System.Windows.Forms.View.List;
+            this.lvFavorites.SelectedIndexChanged += new System.EventHandler(this.lvFavorites_SelectedIndexChanged);
             this.lvFavorites.DoubleClick += new System.EventHandler(this.OpenChatForSelectedFavorite);
             // 
             // cmsFavorites
@@ -171,19 +172,19 @@
             this.miRemoveFavorite,
             this.miOpenChat});
             this.cmsFavorites.Name = "cmsFavorites";
-            this.cmsFavorites.Size = new System.Drawing.Size(160, 48);
+            this.cmsFavorites.Size = new System.Drawing.Size(151, 48);
             // 
             // miRemoveFavorite
             // 
             this.miRemoveFavorite.Name = "miRemoveFavorite";
-            this.miRemoveFavorite.Size = new System.Drawing.Size(159, 22);
+            this.miRemoveFavorite.Size = new System.Drawing.Size(150, 22);
             this.miRemoveFavorite.Text = "즐겨찾기 해제";
             this.miRemoveFavorite.Click += new System.EventHandler(this.UnfavoriteSelected);
             // 
             // miOpenChat
             // 
             this.miOpenChat.Name = "miOpenChat";
-            this.miOpenChat.Size = new System.Drawing.Size(159, 22);
+            this.miOpenChat.Size = new System.Drawing.Size(150, 22);
             this.miOpenChat.Text = "채팅 열기";
             this.miOpenChat.Click += new System.EventHandler(this.OpenChatForSelectedFavorite);
             // 
@@ -205,7 +206,7 @@
             // 
             // listViewRecent
             // 
-            this.listViewRecent.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
+            this.listViewRecent.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.listViewRecent.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.listViewRecent.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
@@ -245,7 +246,7 @@
             this.labelCompany.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(60)))), ((int)(((byte)(60)))), ((int)(((byte)(60)))));
             this.labelCompany.Location = new System.Drawing.Point(10, 13);
             this.labelCompany.Name = "labelCompany";
-            this.labelCompany.Size = new System.Drawing.Size(65, 19);
+            this.labelCompany.Size = new System.Drawing.Size(71, 19);
             this.labelCompany.TabIndex = 1;
             this.labelCompany.Text = "company";
             // 
@@ -308,7 +309,7 @@
             // 
             // pnlTop
             // 
-            this.pnlTop.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
+            this.pnlTop.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.pnlTop.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(250)))), ((int)(((byte)(250)))), ((int)(((byte)(250)))));
             this.pnlTop.Controls.Add(this.labelCompany);

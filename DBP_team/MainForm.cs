@@ -678,6 +678,26 @@ namespace DBP_team
                     item.ToolTipText = dept;
                     lvFavorites.Items.Add(item);
                 }
+
+                // 즐겨찾기가 비어있을 때 안내 텍스트 추가
+                if (lvFavorites.Items.Count == 0)
+                {
+                    var emptyItem = new ListViewItem("즐겨찾기가 비어있습니다")
+                    {
+                        ForeColor = Color.FromArgb(150, 150, 150),
+                        Font = new Font("맑은 고딕", 9F, FontStyle.Italic),
+                        Tag = null // 클릭 방지용
+                    };
+                    lvFavorites.Items.Add(emptyItem);
+
+                    var hintItem = new ListViewItem("부서 목록에서 직원을 우클릭하여 추가하세요")
+                    {
+                        ForeColor = Color.FromArgb(150, 150, 150),
+                        Font = new Font("맑은 고딕", 8F, FontStyle.Italic),
+                        Tag = null
+                    };
+                    lvFavorites.Items.Add(hintItem);
+                }
             }
             catch (Exception ex)
             {
@@ -871,6 +891,11 @@ namespace DBP_team
                 e.SuppressKeyPress = true; // 클릭 소리 방지
                 SearchUsers();
             }
+        }
+
+        private void lvFavorites_SelectedIndexChanged(object sender, EventArgs e)
+        {
+
         }
     }
 }
