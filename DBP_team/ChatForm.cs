@@ -93,6 +93,10 @@ namespace DBP_team
 
             lblSearchCount.Text = "0/0";
 
+            // 시간 검색용 DateTimePicker 초기화
+            dtpStartTime.Value = DateTime.Now.AddDays(-7); // 기본값: 7일 전
+            dtpEndTime.Value = DateTime.Now; // 기본값: 현재 시간
+
             txtChat.KeyDown += (s, e) =>
             {
                 if (e.KeyCode == Keys.Enter && !e.Shift)
@@ -102,6 +106,15 @@ namespace DBP_team
                     btnSend.PerformClick();
                 }
             };
+
+            // 입력창 자동 높이 조절
+            txtChat.TextChanged += (s, e) =>
+            {
+                AdjustTextBoxHeight();
+            };
+
+            // 초기 높이 설정
+            AdjustTextBoxHeight();
         }
 
         private void ConnectToChatServer()
@@ -700,6 +713,57 @@ namespace DBP_team
             ScrollToSearchIndex();
         }
 
+        private void btnSearchTime_Click(object sender, EventArgs e)
+        {
+            var startTime = dtpStartTime.Value;
+            var endTime = dtpEndTime.Value;
+
+            if (startTime > endTime)
+            {
+                MessageBox.Show("시작 시간이 종료 시간보다 늦을 수 없습니다.", "검색 오류", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            ClearPreviousHighlights();
+
+            // 종료 시간을 하루 끝으로 설정 (23:59:59)
+            var endTimeWithTime = endTime.Date.AddDays(1).AddSeconds(-1);
+
+            foreach (Control c in _flow.Controls)
+            {
+                if (c is ChatBubbleControl bubble)
+                {
+                    var t = bubble.Tag as Tuple<string, DateTime, bool, int>;
+                    if (t == null) continue;
+                    var msgTime = t.Item2;
+
+                    // 시간 범위 내에 있는 메시지 찾기
+                    if (msgTime >= startTime && msgTime <= endTimeWithTime)
+                    {
+                        _searchResults.Add(bubble);
+                    }
+                }
+            }
+
+            if (_searchResults.Count == 0)
+            {
+                MessageBox.Show("해당 시간 범위에 일치하는 메시지가 없습니다.", "검색", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                lblSearchCount.Text = "0/0";
+                return;
+            }
+
+            for (int i = 0; i < _searchResults.Count; i++)
+            {
+                var bubble = _searchResults[i];
+                bubble.BackColor = Color.FromArgb(255, 255, 220);
+                _highlighted.Add(bubble);
+            }
+
+            _searchIndex = 0;
+            lblSearchCount.Text = ($"{_searchIndex + 1}/{_searchResults.Count}");
+            ScrollToSearchIndex();
+        }
+
         private void button1_Click(object sender, EventArgs e)
         {
             var text = txtChat.Text?.Trim();
@@ -876,6 +940,7 @@ namespace DBP_team
             }
             catch { }
         }
+<<<<<<< HEAD
 
         private void ApplySentMessageId(int messageId)
         {
@@ -892,7 +957,39 @@ namespace DBP_team
                     b.SetData(t.Item1, t.Item2, t.Item3, _flow.ClientSize.Width);
                     break;
                 }
+=======
+        private void AdjustTextBoxHeight()
+        {
+            if (txtChat == null || pnlBottom == null) return;
+
+            const int minHeight = 25;
+            const int maxHeight = 105;
+            const int topPadding = 12;
+            const int bottomPadding = 13;
+
+            // 현재 텍스트 높이 측정
+            int textHeight = minHeight;
+
+            if (!string.IsNullOrEmpty(txtChat.Text))
+            {
+                Size size = TextRenderer.MeasureText(
+                    txtChat.Text + "W",  // 여유 공간
+                    txtChat.Font,
+                    new Size(txtChat.Width - 20, 0),
+                    TextFormatFlags.WordBreak | TextFormatFlags.TextBoxControl
+                );
+
+                textHeight = Math.Max(minHeight, Math.Min(size.Height, maxHeight));
+            }
+
+            // TextBox 높이 변경
+            if (txtChat.Height != textHeight)
+            {
+                txtChat.Height = textHeight;
+                pnlBottom.Height = topPadding + textHeight + bottomPadding;
+>>>>>>> 3d35fdb5b24dc34abddd7222ec3b71d74001855f
             }
         }
     }
 }
+
