@@ -58,6 +58,8 @@ namespace DBP_team
                 try { if (btnSave != null) btnSave.Visible = false; } catch { }
                 try { if (btnAddressSearch != null) btnAddressSearch.Enabled = false; } catch { }
                 try { if (ChangePWbtn != null) ChangePWbtn.Visible = false; } catch { }
+                // 멀티프로필 편집 버튼은 타인의 프로필 보기에서는 숨김
+                try { if (btnMultiProfiles != null) btnMultiProfiles.Visible = false; } catch { }
             }
         }
 
@@ -100,7 +102,22 @@ namespace DBP_team
 
                 var fullName = row.Table.Columns.Contains("full_name") ? row["full_name"].ToString() : string.Empty;
                 if (txtFullName != null)
+                {
                     txtFullName.Text = fullName ?? string.Empty;
+                    // 뷰어에게는 멀티프로필 표시명으로 이름을 덮어쓴다
+                    if (_readOnly && _viewerId > 0)
+                    {
+                        try
+                        {
+                            var mpName = MultiProfileService.GetDisplayNameForViewer(_userId, _viewerId);
+                            if (!string.IsNullOrWhiteSpace(mpName))
+                            {
+                                txtFullName.Text = mpName;
+                            }
+                        }
+                        catch { }
+                    }
+                }
 
                 labelEmail.Text = "이메일: " + (row["email"]?.ToString() ?? "(없음)");
                 labelCompany.Text = "회사: " + (row["company_name"]?.ToString() ?? "(없음)");
@@ -203,6 +220,40 @@ namespace DBP_team
                 else
                 {
                     pictureProfile.Image = null;
+                }
+
+                // 읽기전용 뷰어에게 멀티프로필 이미지가 있으면 덮어쓰기 (owner=_userId, viewer=_viewerId)
+                if (_readOnly && _viewerId > 0 && pictureProfile != null)
+                {
+                    try
+                    {
+                        // 멀티프로필 매핑 테이블의 사진 컬럼 이름은 'photo'
+                        var mpImgDt = DBManager.Instance.ExecuteDataTable(
+                            "SELECT photo FROM multi_profile_map WHERE owner_user_id = @owner AND target_user_id = @viewer LIMIT 1",
+                            new MySqlParameter("@owner", _userId),
+                            new MySqlParameter("@viewer", _viewerId));
+                        if (mpImgDt != null && mpImgDt.Rows.Count > 0 && mpImgDt.Columns.Contains("photo"))
+                        {
+                            var obj = mpImgDt.Rows[0]["photo"];
+                            byte[] mpBytes = null;
+                            if (obj is byte[] b) mpBytes = b;
+                            else if (obj != DBNull.Value) mpBytes = (byte[])obj;
+
+                            if (mpBytes != null && mpBytes.Length > 0)
+                            {
+                                using (var ms = new MemoryStream(mpBytes))
+                                {
+                                    try
+                                    {
+                                        var img = Image.FromStream(ms);
+                                        pictureProfile.Image = new Bitmap(img);
+                                    }
+                                    catch { }
+                                }
+                            }
+                        }
+                    }
+                    catch { }
                 }
             }
             catch (Exception ex)
