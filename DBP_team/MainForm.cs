@@ -20,6 +20,8 @@ namespace DBP_team
         private System.Windows.Forms.Timer _pollTimer;
         private DateTime _lastPollTime;
         private NotifyIcon _notifyIcon;
+        // 조직도/즐겨찾기 갱신 타이머
+        private System.Windows.Forms.Timer _orgTimer;
 
         // status image list for online/offline
         private ImageList _statusImages;
@@ -351,6 +353,7 @@ namespace DBP_team
                     int depId = Convert.ToInt32(dep["id"]);
                     string depName = dep["name"]?.ToString() ?? $"부서 {depId}";
                     var depNode = new TreeNode(depName) { Tag = $"department:{depId}", ImageIndex = IMG_WHITE, SelectedImageIndex = IMG_WHITE };
+                    bool departmentHasAnyUser = false;
 
                     // 팀 목록
                     var dtTeams = DBManager.Instance.ExecuteDataTable(
@@ -364,6 +367,7 @@ namespace DBP_team
                             int teamId = Convert.ToInt32(team["id"]);
                             string teamName = team["name"]?.ToString() ?? $"팀 {teamId}";
                             var teamNode = new TreeNode(teamName) { Tag = $"team:{teamId}", ImageIndex = IMG_WHITE, SelectedImageIndex = IMG_WHITE };
+                            bool teamHasAnyUser = false;
 
                             // dtVisible에서 해당 부서+팀 사용자만 추가
                             if (dtVisible != null && dtVisible.Rows.Count > 0)
@@ -386,10 +390,16 @@ namespace DBP_team
                                         SelectedImageIndex = GetStatusImageIndex(online)
                                     };
                                     teamNode.Nodes.Add(userNode);
+                                    teamHasAnyUser = true;
                                 }
                             }
 
-                            depNode.Nodes.Add(teamNode);
+                            // 팀에 표시할 사용자가 있을 때만 팀 노드 추가
+                            if (teamHasAnyUser)
+                            {
+                                depNode.Nodes.Add(teamNode);
+                                departmentHasAnyUser = true;
+                            }
                         }
                     }
 
@@ -414,10 +424,20 @@ namespace DBP_team
                                 SelectedImageIndex = GetStatusImageIndex(online)
                             };
                             depNode.Nodes.Add(userNode);
+                            departmentHasAnyUser = true;
                         }
                     }
 
-                    treeViewUser.Nodes.Add(depNode);
+                    // 부서에 표시할 사용자가 있을 때만 부서 노드를 추가
+                    if (departmentHasAnyUser)
+                    {
+                        treeViewUser.Nodes.Add(depNode);
+                    }
+                }
+
+                if (treeViewUser.Nodes.Count == 0)
+                {
+                    treeViewUser.Nodes.Add(new TreeNode("표시할 사용자가 없습니다.") { ImageIndex = IMG_WHITE, SelectedImageIndex = IMG_WHITE });
                 }
 
                 treeViewUser.ExpandAll();
@@ -457,7 +477,7 @@ namespace DBP_team
                 foreach (DataRow r in dt.Rows)
                 {
                     var uid = Convert.ToInt32(r["user_id"]);
-                    // 권한: 숨겨진 사용자는 제외
+                    // 권한: 숨겨hidden 사용자이지않도록확인
                     if (!IsUserVisible(uid)) continue;
 
                     var nameBase = r["name"]?.ToString() ?? "(이름 없음)";
@@ -528,6 +548,14 @@ namespace DBP_team
                     _notifyIcon.BalloonTipClicked += NotifyIcon_BalloonTipClicked;
                 }
                 _pollTimer.Start();
+
+                // 조직도 갱신 타이머: DB 변경 반영(부서/팀/사용자 변경)
+                if (_orgTimer == null)
+                {
+                    _orgTimer = new System.Windows.Forms.Timer { Interval = 5000 }; // 5초마다 확인
+                    _orgTimer.Tick += OrgTimer_Tick;
+                }
+                _orgTimer.Start();
             }
             catch { }
         }
@@ -610,6 +638,19 @@ namespace DBP_team
             catch { }
         }
 
+        private void OrgTimer_Tick(object sender, EventArgs e)
+        {
+            try
+            {
+                if (_userId <= 0 || _companyId <= 0) return;
+                // 권한 캐시 갱신 및 조직도 재로딩
+                RefreshVisibleUsers();
+                LoadCompanyTree();
+                LoadFavorites();
+            }
+            catch { }
+        }
+
         // Stop polling and dispose notify icon on close
         private void MainForm_FormClosed(object sender, FormClosedEventArgs e)
         {
@@ -617,6 +658,17 @@ namespace DBP_team
             {
                 _pollTimer?.Stop();
                 _pollTimer?.Dispose();
+            }
+            catch { }
+
+            try
+            {
+                if (_orgTimer != null)
+                {
+                    _orgTimer.Stop();
+                    _orgTimer.Dispose();
+                    _orgTimer = null;
+                }
             }
             catch { }
 

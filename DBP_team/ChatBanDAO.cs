@@ -10,17 +10,15 @@ namespace DBP_team
         {
             try
             {
-                // Align schema to provided DDL with generated user_min/user_max and unique constraint
+                // Simplified schema without generated columns to ensure compatibility across MySQL versions
                 DBManager.Instance.ExecuteNonQuery(
                     "CREATE TABLE IF NOT EXISTS chat_bans (" +
                     " id INT NOT NULL AUTO_INCREMENT, " +
                     " user_id_1 INT NOT NULL, " +
                     " user_id_2 INT NOT NULL, " +
                     " created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, " +
-                    " user_min INT GENERATED ALWAYS AS (LEAST(user_id_1,user_id_2)) STORED, " +
-                    " user_max INT GENERATED ALWAYS AS (GREATEST(user_id_1,user_id_2)) STORED, " +
                     " PRIMARY KEY (id), " +
-                    " UNIQUE KEY uq_chat_bans_min_max (user_min,user_max), " +
+                    " UNIQUE KEY uq_chat_bans_pair (user_id_1, user_id_2), " +
                     " KEY ix_bans_user1 (user_id_1), " +
                     " KEY ix_bans_user2 (user_id_2) " +
                     ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
@@ -41,7 +39,7 @@ namespace DBP_team
             {
                 EnsureChatBansTableExists();
                 object obj = DBManager.Instance.ExecuteScalar(
-                    "SELECT COUNT(*) FROM chat_bans WHERE user_min = @u1 AND user_max = @u2",
+                    "SELECT COUNT(*) FROM chat_bans WHERE (user_id_1 = @u1 AND user_id_2 = @u2) OR (user_id_1 = @u2 AND user_id_2 = @u1)",
                     new MySqlParameter("@u1", a),
                     new MySqlParameter("@u2", b));
                 int count = 0;
@@ -67,7 +65,8 @@ namespace DBP_team
             try
             {
                 EnsureChatBansTableExists();
-                var sql = "INSERT INTO chat_bans (user_id_1, user_id_2) VALUES (@a, @b)";
+                // Normalize pair order and avoid duplicates
+                var sql = "INSERT IGNORE INTO chat_bans (user_id_1, user_id_2) VALUES (@a, @b)";
                 var rows = DBManager.Instance.ExecuteNonQuery(sql,
                     new MySqlParameter("@a", a),
                     new MySqlParameter("@b", b));
@@ -84,7 +83,7 @@ namespace DBP_team
             try
             {
                 EnsureChatBansTableExists();
-                var sql = "DELETE FROM chat_bans WHERE user_min = @a AND user_max = @b";
+                var sql = "DELETE FROM chat_bans WHERE (user_id_1 = @a AND user_id_2 = @b) OR (user_id_1 = @b AND user_id_2 = @a)";
                 var rows = DBManager.Instance.ExecuteNonQuery(sql,
                     new MySqlParameter("@a", a),
                     new MySqlParameter("@b", b));

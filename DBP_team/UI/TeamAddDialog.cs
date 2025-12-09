@@ -53,19 +53,34 @@ namespace DBP_team.UI
             CancelButton = _cancel;
 
             Load += TeamAddDialog_Load;
+            // 콤보 박스 드롭다운 열릴 때마다 최신 부서 목록을 다시 로드
+            _cbDept.DropDown += (s, e) => { LoadDepartments(); };
         }
 
         private void TeamAddDialog_Load(object sender, EventArgs e)
         {
+            LoadDepartments();
+        }
+
+        private void LoadDepartments()
+        {
             try
             {
+                int prevSelected = SelectedDepartmentId;
                 var dt = DBManager.Instance.ExecuteDataTable(
                     "SELECT id, name FROM departments WHERE company_id = @cid ORDER BY name",
                     new MySqlParameter("@cid", _companyId));
                 _cbDept.DataSource = dt;
                 _cbDept.DisplayMember = "name";
                 _cbDept.ValueMember = "id";
-                _cbDept.SelectedIndex = dt != null && dt.Rows.Count > 0 ? 0 : -1;
+                if (prevSelected > 0)
+                {
+                    _cbDept.SelectedValue = prevSelected;
+                }
+                else
+                {
+                    _cbDept.SelectedIndex = dt != null && dt.Rows.Count > 0 ? 0 : -1;
+                }
             }
             catch (Exception ex)
             {

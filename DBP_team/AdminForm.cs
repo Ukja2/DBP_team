@@ -55,6 +55,9 @@ namespace DBP_team
 
                     LoadDeptGrid();
                     LoadDeptComboForUser();
+                    // 팀 콤보는 초기 한 번 로드하고, 디자이너에서 이벤트가 이미 연결되어 있으면 그 핸들러에 맡깁니다.
+                    LoadTeamComboForUser();
+
                     LoadUsersGrid();
                     LoadUserFilterCombo();
                     SearchAccessLogs();
@@ -177,6 +180,38 @@ namespace DBP_team
             _cboDeptForUser.ValueMember = "id";
         }
 
+        // 새로 추가: 선택된 부서에 따른 팀 콤보 로드
+        private void LoadTeamComboForUser()
+        {
+            try
+            {
+                if (_cboTeamForUser == null) return; // 디자이너에 콤보가 있어야 함
+                int deptId;
+                if (!int.TryParse(Convert.ToString(_cboDeptForUser.SelectedValue), out deptId)) deptId = 0;
+
+                DataTable dt;
+                if (deptId > 0)
+                {
+                    dt = DBManager.Instance.ExecuteDataTable(
+                        "SELECT id, name FROM teams WHERE department_id = @did ORDER BY name",
+                        new MySqlParameter("@did", deptId));
+                }
+                else
+                {
+                    // 부서 선택 안됨: 빈 테이블
+                    dt = new DataTable();
+                    dt.Columns.Add("id", typeof(int));
+                    dt.Columns.Add("name", typeof(string));
+                }
+
+                _cboTeamForUser.DataSource = dt;
+                _cboTeamForUser.DisplayMember = "name";
+                _cboTeamForUser.ValueMember = "id";
+                _cboTeamForUser.SelectedIndex = dt.Rows.Count > 0 ? 0 : -1;
+            }
+            catch { }
+        }
+
         private void LoadUsersGrid(string keyword = null)
         {
             DataTable dt;
@@ -184,9 +219,10 @@ namespace DBP_team
             if (AdminGuard.IsAdmin(_me))
             {
                 var sql = "SELECT u.id, COALESCE(u.full_name, u.email) AS name, u.email, " +
-                          "u.department_id, d.name AS department " +
+                          "u.department_id, u.team_id, d.name AS department, t.name AS team " +
                           "FROM users u " +
                           "LEFT JOIN departments d ON d.id = u.department_id " +
+                          "LEFT JOIN teams t ON t.id = u.team_id " +
                           "WHERE u.company_id = @cid";
 
                 var pars = new System.Collections.Generic.List<MySqlParameter>
@@ -221,6 +257,9 @@ namespace DBP_team
             if (_gridUsers.Columns.Contains("department_id"))
                 _gridUsers.Columns["department_id"].Visible = false;
 
+            if (_gridUsers.Columns.Contains("team_id"))
+                _gridUsers.Columns["team_id"].Visible = false;
+
             if (_gridUsers.Columns.Contains("name"))
                 _gridUsers.Columns["name"].HeaderText = "이름";
 
@@ -229,6 +268,9 @@ namespace DBP_team
 
             if (_gridUsers.Columns.Contains("department"))
                 _gridUsers.Columns["department"].HeaderText = "부서";
+
+            if (_gridUsers.Columns.Contains("team"))
+                _gridUsers.Columns["team"].HeaderText = "팀";
         }
 
         private void ApplyUserDepartment()
@@ -236,17 +278,30 @@ namespace DBP_team
             if (_gridUsers.SelectedRows.Count == 0) { MessageBox.Show("사용자를 선택하세요."); return; }
             if (!int.TryParse(Convert.ToString(_cboDeptForUser.SelectedValue), out int deptId)) { MessageBox.Show("부서를 선택하세요."); return; }
 
+            int teamId = 0;
+            try
+            {
+                if (_cboTeamForUser != null && _cboTeamForUser.SelectedValue != null)
+                    int.TryParse(Convert.ToString(_cboTeamForUser.SelectedValue), out teamId);
+            }
+            catch { teamId = 0; }
+
             foreach (DataGridViewRow row in _gridUsers.SelectedRows)
             {
                 var drv = row.DataBoundItem as DataRowView;
                 if (drv == null) continue;
                 int uid = Convert.ToInt32(drv["id"]);
                 DBManager.Instance.ExecuteNonQuery(
-                    "UPDATE users SET department_id = @did WHERE id = @uid AND company_id = @cid",
-                    new MySqlParameter("@did", deptId), new MySqlParameter("@uid", uid), new MySqlParameter("@cid", _companyId));
+                    "UPDATE users SET department_id = @did, team_id = @tid WHERE id = @uid AND company_id = @cid",
+                    new MySqlParameter("@did", deptId),
+                    new MySqlParameter("@tid", teamId > 0 ? (object)teamId : DBNull.Value),
+                    new MySqlParameter("@uid", uid),
+                    new MySqlParameter("@cid", _companyId));
             }
 
             LoadUsersGrid(_txtUserSearch.Text?.Trim());
+            // 권한 트리/조직도 갱신
+            InitializePermissionTree();
         }
 
         private void LoadUserFilterCombo()
@@ -528,7 +583,7 @@ namespace DBP_team
 
                 var allowedDepts = new HashSet<int>();
                 var allowedTeams = new HashSet<string>(); // deptId:teamId
-                var allowedUsers = new HashSet<string>(); // deptId:teamId:userId
+                var allowedUsers = new HashSet<int>(); // userId only
                 foreach (DataRow r in permDt.Rows)
                 {
                     var did = r["dept_id"] != DBNull.Value ? Convert.ToInt32(r["dept_id"]) : 0;
@@ -545,7 +600,7 @@ namespace DBP_team
                     else if (code.StartsWith("USER:"))
                     {
                         if (int.TryParse(code.Substring(5), out int uid))
-                            allowedUsers.Add(did + ":" + 0 + ":" + uid); // 팀 없음은 0, 실제 팀은 후처리에서 모두 비교
+                            allowedUsers.Add(uid);
                     }
                 }
 
@@ -563,15 +618,14 @@ namespace DBP_team
                         if (ttag == null) continue;
 
                         // 팀 노드 또는 (팀 없음) 노드
-                        bool teamAllowed = ttag.TeamId.HasValue && allowedTeams.Contains(ttag.DeptId + ":" + (ttag.TeamId ?? 0));
+                        bool teamAllowed = ttag.TeamId.HasValue && allowedTeams.Contains(dtag.DeptId + ":" + (ttag.TeamId ?? 0));
                         teamNode.Checked = teamAllowed || deptAllowed;
 
                         foreach (TreeNode userNode in teamNode.Nodes)
                         {
                             var utag = userNode.Tag as PermissionTag;
-                            if (utag == null) continue;
-                            string keyUser = utag.DeptId + ":" + (utag.TeamId ?? 0) + ":" + (utag.UserId ?? 0);
-                            bool userAllowed = allowedUsers.Contains(keyUser);
+                            if (utag == null || !utag.UserId.HasValue) continue;
+                            bool userAllowed = allowedUsers.Contains(utag.UserId.Value);
                             userNode.Checked = userAllowed || teamAllowed || deptAllowed;
                         }
                     }
@@ -592,22 +646,10 @@ namespace DBP_team
             try
             {
                 _tvUpdating = true;
-                // 자식으로 전파
+                // 자식으로 전파만 수행 (부모로의 자동 체크/해제는 하지 않음)
                 foreach (TreeNode child in e.Node.Nodes)
                 {
                     child.Checked = e.Node.Checked;
-                }
-                // 부모로 전파 (부모는 하나라도 체크되면 체크, 모두 해제되면 해제)
-                var parent = e.Node.Parent;
-                while (parent != null)
-                {
-                    bool anyChecked = false;
-                    foreach (TreeNode sib in parent.Nodes)
-                    {
-                        if (sib.Checked) { anyChecked = true; break; }
-                    }
-                    parent.Checked = anyChecked;
-                    parent = parent.Parent;
                 }
             }
             finally { _tvUpdating = false; }
@@ -698,7 +740,24 @@ namespace DBP_team
                 _cbUser2.DisplayMember = "name";
                 _cbUser2.ValueMember = "id";
 
-                // bans 목록은 필요 시 DB에서 로드하도록 남겨둠
+                // ListView 준비: 컬럼 없으면 추가
+                if (_lvBans != null)
+                {
+                    _lvBans.View = View.Details;
+                    _lvBans.FullRowSelect = true;
+                    _lvBans.HideSelection = false;
+                    _lvBans.MultiSelect = true;
+
+                    if (_lvBans.Columns.Count == 0)
+                    {
+                        _lvBans.Columns.Add("사용자 A", 160);
+                        _lvBans.Columns.Add("사용자 B", 160);
+                        _lvBans.Columns.Add("생성 시간", 160);
+                    }
+                }
+
+                // UI 초기화 후 즉시 차단 목록 로드
+                LoadBansToListView();
             }
             catch { }
         }
