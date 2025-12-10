@@ -19,6 +19,10 @@ namespace DBP_team
 {
     public partial class ChatForm : Form
     {
+        // expose read-only IDs so callers can detect existing chat windows
+        public int MyUserId => _myUserId;
+        public int OtherUserId => _otherUserId;
+
         private readonly int _myUserId;
         private readonly int _otherUserId;
         private readonly string _otherName;
@@ -93,6 +97,61 @@ namespace DBP_team
 
             lblSearchCount.Text = "0/0";
 
+            // 검색 초기화 버튼(런타임 추가) -> 하이라이트 해제
+            try
+            {
+                var btnClearSearch = new Button()
+                {
+                    Name = "btnClearSearch",
+                    Text = "초기화",
+                    Size = new Size(60, 24),
+                    TabIndex = 999
+                };
+
+                // 클릭 동작
+                btnClearSearch.Click += (s, e) =>
+                {
+                    try { ClearPreviousHighlights(); } catch { }
+                    try { txtSearch?.Focus(); } catch { }
+                };
+
+                // 기본 부모를 pnlBottom으로 하되, 없으면 폼에 추가
+                Control parent = pnlBottom ?? (Control)this;
+
+                // 우측 정렬: 가능하면 lblSearchCount 또는 btnSearchNext 옆에 배치
+                if (btnSearchNext != null && btnSearchNext.Parent != null)
+                {
+                    parent = btnSearchNext.Parent;
+                    // 위치를 부모 좌표계로 변환
+                    var right = btnSearchNext.Right;
+                    var top = btnSearchNext.Top;
+                    btnClearSearch.Location = new Point(right + 6, top);
+                    btnClearSearch.Anchor = btnSearchNext.Anchor;
+                }
+                else if (lblSearchCount != null && lblSearchCount.Parent != null)
+                {
+                    parent = lblSearchCount.Parent;
+                    btnClearSearch.Location = new Point(lblSearchCount.Right + 6, lblSearchCount.Top);
+                    btnClearSearch.Anchor = lblSearchCount.Anchor;
+                }
+                else if (pnlBottom != null)
+                {
+                    btnClearSearch.Location = new Point(pnlBottom.Width - btnClearSearch.Width - 10, 8);
+                    btnClearSearch.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+                }
+                else
+                {
+                    // fallback to form top-right
+                    btnClearSearch.Location = new Point(this.ClientSize.Width - btnClearSearch.Width - 10, 8);
+                    btnClearSearch.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+                }
+
+                parent.Controls.Add(btnClearSearch);
+                btnClearSearch.BringToFront();
+                btnClearSearch.Visible = true;
+            }
+            catch { }
+
             // 시간 검색용 DateTimePicker 초기화
             dtpStartTime.Value = DateTime.Now.AddDays(-7); // 기본값: 7일 전
             dtpEndTime.Value = DateTime.Now; // 기본값: 현재 시간
@@ -116,6 +175,47 @@ namespace DBP_team
             // 초기 높이 설정
             AdjustTextBoxHeight();
 
+            // Ensure button is positioned after layout is ready
+            this.Shown -= ChatForm_Shown;
+            this.Shown += ChatForm_Shown;
+        }
+
+        private void ChatForm_Shown(object sender, EventArgs e)
+        {
+            try
+            {
+                var btnObj = this.Controls.Find("btnClearSearch", true).FirstOrDefault();
+                if (!(btnObj is Button btn)) return;
+
+                // Reposition based on available controls/parents
+                if (btnSearchNext != null && btnSearchNext.Parent != null)
+                {
+                    btn.Parent = btnSearchNext.Parent;
+                    btn.Location = new Point(btnSearchNext.Right + 6, btnSearchNext.Top);
+                    btn.Anchor = btnSearchNext.Anchor;
+                }
+                else if (lblSearchCount != null && lblSearchCount.Parent != null)
+                {
+                    btn.Parent = lblSearchCount.Parent;
+                    btn.Location = new Point(lblSearchCount.Right + 6, lblSearchCount.Top);
+                    btn.Anchor = lblSearchCount.Anchor;
+                }
+                else if (pnlBottom != null)
+                {
+                    btn.Parent = pnlBottom;
+                    btn.Location = new Point(Math.Max(8, pnlBottom.Width - btn.Width - 10), 8);
+                    btn.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+                }
+                else
+                {
+                    btn.Location = new Point(Math.Max(8, this.ClientSize.Width - btn.Width - 10), 8);
+                    btn.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+                }
+
+                btn.BringToFront();
+                btn.Visible = true;
+            }
+            catch { }
             // 하단 패널을 맨 앞으로 가져와서 채팅 영역 위에 표시되도록 함
             pnlBottom.BringToFront();
 

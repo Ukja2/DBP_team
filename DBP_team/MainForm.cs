@@ -281,11 +281,32 @@ namespace DBP_team
                         return;
                     }
 
-                    var chat = new ChatForm(_userId, otherId, otherDisplay);
-                    chat.StartPosition = FormStartPosition.CenterParent;
-                    chat.Show(this);
+                    OpenOrFocusChat(otherId, otherDisplay);
                 }
             }
+        }
+
+        // Ensure single chat window per other user: focus existing or open new
+        private void OpenOrFocusChat(int otherId, string displayName)
+        {
+            try
+            {
+                // find existing chat forms owned by this main form or in application
+                var open = Application.OpenForms.OfType<ChatForm>()
+                    .FirstOrDefault(f => f.MyUserId == _userId && f.OtherUserId == otherId);
+                if (open != null)
+                {
+                    if (open.WindowState == FormWindowState.Minimized) open.WindowState = FormWindowState.Normal;
+                    open.BringToFront();
+                    open.Focus();
+                    return;
+                }
+
+                var chat = new ChatForm(_userId, otherId, displayName);
+                chat.StartPosition = FormStartPosition.CenterParent;
+                chat.Show(this);
+            }
+            catch { }
         }
 
         // btnSelfChat 클릭 핸들러: 본인과의 채팅창 열기
@@ -520,9 +541,7 @@ namespace DBP_team
                 return;
             }
 
-            var chat = new ChatForm(_userId, otherId, otherDisplay);
-            chat.StartPosition = FormStartPosition.CenterParent;
-            chat.Show(this);
+            OpenOrFocusChat(otherId, otherDisplay);
         }
 
         // Polling: start timer and notify icon
@@ -572,9 +591,7 @@ namespace DBP_team
                 }
                 var mpName = MultiProfileService.GetDisplayNameForViewer(_lastNotifSenderId, _userId);
                 var disp = string.IsNullOrWhiteSpace(mpName) ? (_lastNotifSenderName ?? "상대") : mpName;
-                var chat = new ChatForm(_userId, _lastNotifSenderId, disp);
-                chat.StartPosition = FormStartPosition.CenterParent;
-                chat.Show(this);
+                OpenOrFocusChat(_lastNotifSenderId, disp);
             }
             catch { }
         }
