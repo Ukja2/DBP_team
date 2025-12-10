@@ -115,6 +115,37 @@ namespace DBP_team
 
             // 초기 높이 설정
             AdjustTextBoxHeight();
+
+            // 하단 패널을 맨 앞으로 가져와서 채팅 영역 위에 표시되도록 함
+            pnlBottom.BringToFront();
+
+            // 폼 크기 변경 시 레이아웃 조정
+            this.Resize += (s, e) =>
+            {
+                AdjustLayout();
+            };
+
+            // 초기 레이아웃 조정
+            AdjustLayout();
+        }
+
+        private void AdjustLayout()
+        {
+            if (pnlBottom == null || _flow == null) return;
+
+            // 하단 패널을 맨 앞으로
+            pnlBottom.BringToFront();
+
+            // 채팅 영역의 높이를 하단 패널 높이를 고려하여 조정
+            int bottomPanelHeight = pnlBottom.Height;
+            int topPanelHeight = pnlTop.Height;
+            int availableHeight = this.ClientSize.Height - topPanelHeight - bottomPanelHeight;
+
+            if (availableHeight > 0)
+            {
+                _flow.Location = new Point(0, topPanelHeight);
+                _flow.Size = new Size(this.ClientSize.Width, availableHeight);
+            }
         }
 
         private void ConnectToChatServer()
@@ -864,6 +895,9 @@ namespace DBP_team
 
         private void ChatForm_Load(object sender, EventArgs e)
         {
+            // 하단 패널을 맨 앞으로 가져와서 채팅 영역 위에 표시되도록 함
+            pnlBottom.BringToFront();
+            AdjustLayout();
         }
 
         private void btnEmoji_Click(object sender, EventArgs e)
@@ -1008,22 +1042,38 @@ namespace DBP_team
 
             if (!string.IsNullOrEmpty(txtChat.Text))
             {
+                // 텍스트박스의 실제 사용 가능한 너비 계산 (스크롤바 고려)
+                int availableWidth = txtChat.Width - SystemInformation.VerticalScrollBarWidth - 4;
+                
                 Size size = TextRenderer.MeasureText(
-                    txtChat.Text + "W",  // 여유 공간
+                    txtChat.Text,
                     txtChat.Font,
-                    new Size(txtChat.Width - 20, 0),
+                    new Size(availableWidth > 0 ? availableWidth : txtChat.Width - 20, 0),
                     TextFormatFlags.WordBreak | TextFormatFlags.TextBoxControl
                 );
 
-                textHeight = Math.Max(minHeight, Math.Min(size.Height, maxHeight));
+                // 텍스트박스의 내부 패딩 고려 (약 4픽셀)
+                int measuredHeight = size.Height + 4;
+                textHeight = Math.Max(minHeight, Math.Min(measuredHeight, maxHeight));
             }
 
             // TextBox 높이 변경
             if (txtChat.Height != textHeight)
             {
                 txtChat.Height = textHeight;
-                pnlBottom.Height = topPadding + textHeight + bottomPadding;
+                int newPanelHeight = topPadding + textHeight + bottomPadding;
+                pnlBottom.Height = newPanelHeight;
 
+                // 버튼들을 패널 중간에 위치시키기
+                int buttonTop = (newPanelHeight - 28) / 2; // 버튼 높이 28 기준 중간 정렬
+                if (buttonTop < topPadding) buttonTop = topPadding;
+
+                if (btnEmoji != null) btnEmoji.Top = buttonTop;
+                if (btnFile != null) btnFile.Top = buttonTop;
+                if (btnSend != null) btnSend.Top = buttonTop;
+
+                // 레이아웃 조정 (하단 패널 높이 변경 후 채팅 영역 크기 조정)
+                AdjustLayout();
             }
         }
     }

@@ -784,6 +784,7 @@ namespace DBP_team
                     if (!string.IsNullOrWhiteSpace(mpName)) name = mpName;
 
                     var item = new ListViewItem(name) { Tag = userId };
+                    item.SubItems.Add(dept); // 부서 이름을 두 번째 컬럼에 추가
                     item.ToolTipText = dept;
                     lvFavorites.Items.Add(item);
                 }

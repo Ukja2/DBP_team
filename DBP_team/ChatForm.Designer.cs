@@ -40,7 +40,6 @@ namespace DBP_team
             this.btnEmoji = new System.Windows.Forms.Button();
             this.btnFile = new System.Windows.Forms.Button();
             this.pnlTop = new System.Windows.Forms.Panel();
-            this.label1 = new System.Windows.Forms.Label();
             this.dtpStartTime = new System.Windows.Forms.DateTimePicker();
             this.dtpEndTime = new System.Windows.Forms.DateTimePicker();
             this.btnSearchTime = new System.Windows.Forms.Button();
@@ -57,10 +56,10 @@ namespace DBP_team
             this.listChat.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.listChat.Font = new System.Drawing.Font("맑은 고딕", 9F);
             this.listChat.HideSelection = false;
-            this.listChat.Location = new System.Drawing.Point(0, 105);
+            this.listChat.Location = new System.Drawing.Point(0, 131);
             this.listChat.Margin = new System.Windows.Forms.Padding(0);
             this.listChat.Name = "listChat";
-            this.listChat.Size = new System.Drawing.Size(484, 432);
+            this.listChat.Size = new System.Drawing.Size(553, 544);
             this.listChat.TabIndex = 0;
             this.listChat.UseCompatibleStateImageBehavior = false;
             this.listChat.SelectedIndexChanged += new System.EventHandler(this.listView1_SelectedIndexChanged);
@@ -70,9 +69,9 @@ namespace DBP_team
             this.labelChat.AutoSize = true;
             this.labelChat.Font = new System.Drawing.Font("맑은 고딕", 12F, System.Drawing.FontStyle.Bold);
             this.labelChat.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(50)))), ((int)(((byte)(50)))), ((int)(((byte)(50)))));
-            this.labelChat.Location = new System.Drawing.Point(15, 10);
+            this.labelChat.Location = new System.Drawing.Point(17, 12);
             this.labelChat.Name = "labelChat";
-            this.labelChat.Size = new System.Drawing.Size(74, 21);
+            this.labelChat.Size = new System.Drawing.Size(92, 28);
             this.labelChat.TabIndex = 1;
             this.labelChat.Text = "채팅방명";
             // 
@@ -82,25 +81,27 @@ namespace DBP_team
             | System.Windows.Forms.AnchorStyles.Right)));
             this.txtChat.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.txtChat.Font = new System.Drawing.Font("맑은 고딕", 10F);
-            this.txtChat.Location = new System.Drawing.Point(10, 10);
+            this.txtChat.Location = new System.Drawing.Point(14, 15);
+            this.txtChat.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.txtChat.Multiline = true;
             this.txtChat.Name = "txtChat";
             this.txtChat.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            this.txtChat.Size = new System.Drawing.Size(270, 25);
+            this.txtChat.Size = new System.Drawing.Size(308, 31);
             this.txtChat.TabIndex = 2;
             this.txtChat.TextChanged += new System.EventHandler(this.txtChat_TextChanged);
             // 
             // btnSend
             // 
-            this.btnSend.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnSend.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.btnSend.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(74)))), ((int)(((byte)(144)))), ((int)(((byte)(226)))));
             this.btnSend.FlatAppearance.BorderSize = 0;
             this.btnSend.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnSend.Font = new System.Drawing.Font("맑은 고딕", 9F, System.Drawing.FontStyle.Bold);
             this.btnSend.ForeColor = System.Drawing.Color.White;
-            this.btnSend.Location = new System.Drawing.Point(396, 10);
+            this.btnSend.Location = new System.Drawing.Point(453, 12);
+            this.btnSend.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.btnSend.Name = "btnSend";
-            this.btnSend.Size = new System.Drawing.Size(66, 22);
+            this.btnSend.Size = new System.Drawing.Size(86, 35);
             this.btnSend.TabIndex = 3;
             this.btnSend.Text = "전송";
             this.btnSend.UseVisualStyleBackColor = false;
@@ -111,9 +112,10 @@ namespace DBP_team
             this.txtSearch.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.txtSearch.Font = new System.Drawing.Font("맑은 고딕", 9F);
             this.txtSearch.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(100)))), ((int)(((byte)(100)))), ((int)(((byte)(100)))));
-            this.txtSearch.Location = new System.Drawing.Point(15, 40);
+            this.txtSearch.Location = new System.Drawing.Point(17, 50);
+            this.txtSearch.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.txtSearch.Name = "txtSearch";
-            this.txtSearch.Size = new System.Drawing.Size(250, 23);
+            this.txtSearch.Size = new System.Drawing.Size(285, 27);
             this.txtSearch.TabIndex = 4;
             this.txtSearch.Text = "메시지 검색...";
             // 
@@ -124,9 +126,10 @@ namespace DBP_team
             this.btnSearch.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnSearch.Font = new System.Drawing.Font("맑은 고딕", 9F);
             this.btnSearch.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(80)))), ((int)(((byte)(80)))), ((int)(((byte)(80)))));
-            this.btnSearch.Location = new System.Drawing.Point(275, 40);
+            this.btnSearch.Location = new System.Drawing.Point(314, 50);
+            this.btnSearch.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.btnSearch.Name = "btnSearch";
-            this.btnSearch.Size = new System.Drawing.Size(60, 23);
+            this.btnSearch.Size = new System.Drawing.Size(69, 29);
             this.btnSearch.TabIndex = 5;
             this.btnSearch.Text = "검색";
             this.btnSearch.UseVisualStyleBackColor = false;
@@ -139,9 +142,10 @@ namespace DBP_team
             this.btnSearchPrev.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnSearchPrev.Font = new System.Drawing.Font("맑은 고딕", 8F, System.Drawing.FontStyle.Bold);
             this.btnSearchPrev.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(80)))), ((int)(((byte)(80)))), ((int)(((byte)(80)))));
-            this.btnSearchPrev.Location = new System.Drawing.Point(343, 40);
+            this.btnSearchPrev.Location = new System.Drawing.Point(392, 50);
+            this.btnSearchPrev.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.btnSearchPrev.Name = "btnSearchPrev";
-            this.btnSearchPrev.Size = new System.Drawing.Size(28, 23);
+            this.btnSearchPrev.Size = new System.Drawing.Size(32, 29);
             this.btnSearchPrev.TabIndex = 8;
             this.btnSearchPrev.Text = "▲";
             this.btnSearchPrev.UseVisualStyleBackColor = false;
@@ -154,9 +158,10 @@ namespace DBP_team
             this.btnSearchNext.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnSearchNext.Font = new System.Drawing.Font("맑은 고딕", 8F, System.Drawing.FontStyle.Bold);
             this.btnSearchNext.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(80)))), ((int)(((byte)(80)))), ((int)(((byte)(80)))));
-            this.btnSearchNext.Location = new System.Drawing.Point(377, 40);
+            this.btnSearchNext.Location = new System.Drawing.Point(431, 50);
+            this.btnSearchNext.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.btnSearchNext.Name = "btnSearchNext";
-            this.btnSearchNext.Size = new System.Drawing.Size(28, 23);
+            this.btnSearchNext.Size = new System.Drawing.Size(32, 29);
             this.btnSearchNext.TabIndex = 9;
             this.btnSearchNext.Text = "▼";
             this.btnSearchNext.UseVisualStyleBackColor = false;
@@ -167,22 +172,23 @@ namespace DBP_team
             this.lblSearchCount.AutoSize = true;
             this.lblSearchCount.Font = new System.Drawing.Font("맑은 고딕", 9F);
             this.lblSearchCount.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(120)))), ((int)(((byte)(120)))), ((int)(((byte)(120)))));
-            this.lblSearchCount.Location = new System.Drawing.Point(413, 44);
+            this.lblSearchCount.Location = new System.Drawing.Point(472, 55);
             this.lblSearchCount.Name = "lblSearchCount";
-            this.lblSearchCount.Size = new System.Drawing.Size(26, 15);
+            this.lblSearchCount.Size = new System.Drawing.Size(31, 20);
             this.lblSearchCount.TabIndex = 10;
             this.lblSearchCount.Text = "0/0";
             // 
             // btnEmoji
             // 
-            this.btnEmoji.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnEmoji.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.btnEmoji.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(240)))), ((int)(((byte)(240)))));
             this.btnEmoji.FlatAppearance.BorderSize = 0;
             this.btnEmoji.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnEmoji.Font = new System.Drawing.Font("맑은 고딕", 10F);
-            this.btnEmoji.Location = new System.Drawing.Point(292, 10);
+            this.btnEmoji.Location = new System.Drawing.Point(334, 12);
+            this.btnEmoji.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.btnEmoji.Name = "btnEmoji";
-            this.btnEmoji.Size = new System.Drawing.Size(45, 28);
+            this.btnEmoji.Size = new System.Drawing.Size(51, 35);
             this.btnEmoji.TabIndex = 6;
             this.btnEmoji.Text = "😊";
             this.btnEmoji.UseVisualStyleBackColor = false;
@@ -190,14 +196,15 @@ namespace DBP_team
             // 
             // btnFile
             // 
-            this.btnFile.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnFile.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.btnFile.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(240)))), ((int)(((byte)(240)))));
             this.btnFile.FlatAppearance.BorderSize = 0;
             this.btnFile.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnFile.Font = new System.Drawing.Font("맑은 고딕", 10F);
-            this.btnFile.Location = new System.Drawing.Point(343, 10);
+            this.btnFile.Location = new System.Drawing.Point(392, 12);
+            this.btnFile.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.btnFile.Name = "btnFile";
-            this.btnFile.Size = new System.Drawing.Size(45, 28);
+            this.btnFile.Size = new System.Drawing.Size(51, 35);
             this.btnFile.TabIndex = 7;
             this.btnFile.Text = "📎";
             this.btnFile.UseVisualStyleBackColor = false;
@@ -206,7 +213,6 @@ namespace DBP_team
             // pnlTop
             // 
             this.pnlTop.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(250)))), ((int)(((byte)(250)))), ((int)(((byte)(250)))));
-            this.pnlTop.Controls.Add(this.label1);
             this.pnlTop.Controls.Add(this.labelChat);
             this.pnlTop.Controls.Add(this.lblSearchCount);
             this.pnlTop.Controls.Add(this.txtSearch);
@@ -218,27 +224,20 @@ namespace DBP_team
             this.pnlTop.Controls.Add(this.btnSearchTime);
             this.pnlTop.Dock = System.Windows.Forms.DockStyle.Top;
             this.pnlTop.Location = new System.Drawing.Point(0, 0);
+            this.pnlTop.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.pnlTop.Name = "pnlTop";
-            this.pnlTop.Size = new System.Drawing.Size(484, 105);
+            this.pnlTop.Size = new System.Drawing.Size(553, 131);
             this.pnlTop.TabIndex = 11;
-            // 
-            // label1
-            // 
-            this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(161, 70);
-            this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(14, 12);
-            this.label1.TabIndex = 14;
-            this.label1.Text = "~";
             // 
             // dtpStartTime
             // 
             this.dtpStartTime.CustomFormat = "yyyy-MM-dd HH:mm";
             this.dtpStartTime.Font = new System.Drawing.Font("맑은 고딕", 8F);
             this.dtpStartTime.Format = System.Windows.Forms.DateTimePickerFormat.Custom;
-            this.dtpStartTime.Location = new System.Drawing.Point(15, 65);
+            this.dtpStartTime.Location = new System.Drawing.Point(17, 81);
+            this.dtpStartTime.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.dtpStartTime.Name = "dtpStartTime";
-            this.dtpStartTime.Size = new System.Drawing.Size(140, 22);
+            this.dtpStartTime.Size = new System.Drawing.Size(159, 25);
             this.dtpStartTime.TabIndex = 11;
             // 
             // dtpEndTime
@@ -246,9 +245,10 @@ namespace DBP_team
             this.dtpEndTime.CustomFormat = "yyyy-MM-dd HH:mm";
             this.dtpEndTime.Font = new System.Drawing.Font("맑은 고딕", 8F);
             this.dtpEndTime.Format = System.Windows.Forms.DateTimePickerFormat.Custom;
-            this.dtpEndTime.Location = new System.Drawing.Point(185, 65);
+            this.dtpEndTime.Location = new System.Drawing.Point(211, 81);
+            this.dtpEndTime.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.dtpEndTime.Name = "dtpEndTime";
-            this.dtpEndTime.Size = new System.Drawing.Size(140, 22);
+            this.dtpEndTime.Size = new System.Drawing.Size(159, 25);
             this.dtpEndTime.TabIndex = 12;
             // 
             // btnSearchTime
@@ -258,9 +258,10 @@ namespace DBP_team
             this.btnSearchTime.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnSearchTime.Font = new System.Drawing.Font("맑은 고딕", 9F);
             this.btnSearchTime.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(80)))), ((int)(((byte)(80)))), ((int)(((byte)(80)))));
-            this.btnSearchTime.Location = new System.Drawing.Point(335, 65);
+            this.btnSearchTime.Location = new System.Drawing.Point(383, 81);
+            this.btnSearchTime.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.btnSearchTime.Name = "btnSearchTime";
-            this.btnSearchTime.Size = new System.Drawing.Size(70, 30);
+            this.btnSearchTime.Size = new System.Drawing.Size(80, 29);
             this.btnSearchTime.TabIndex = 13;
             this.btnSearchTime.Text = "시간검색";
             this.btnSearchTime.UseVisualStyleBackColor = false;
@@ -274,21 +275,23 @@ namespace DBP_team
             this.pnlBottom.Controls.Add(this.btnFile);
             this.pnlBottom.Controls.Add(this.btnSend);
             this.pnlBottom.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.pnlBottom.Location = new System.Drawing.Point(0, 540);
+            this.pnlBottom.Location = new System.Drawing.Point(0, 676);
+            this.pnlBottom.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.pnlBottom.Name = "pnlBottom";
-            this.pnlBottom.Size = new System.Drawing.Size(484, 50);
+            this.pnlBottom.Size = new System.Drawing.Size(553, 62);
             this.pnlBottom.TabIndex = 12;
             // 
             // ChatForm
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 12F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.White;
-            this.ClientSize = new System.Drawing.Size(484, 590);
+            this.ClientSize = new System.Drawing.Size(553, 738);
             this.Controls.Add(this.listChat);
             this.Controls.Add(this.pnlBottom);
             this.Controls.Add(this.pnlTop);
-            this.MinimumSize = new System.Drawing.Size(400, 498);
+            this.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.MinimumSize = new System.Drawing.Size(455, 613);
             this.Name = "ChatForm";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "채팅";
@@ -320,6 +323,5 @@ namespace DBP_team
         private System.Windows.Forms.DateTimePicker dtpStartTime;
         private System.Windows.Forms.DateTimePicker dtpEndTime;
         private System.Windows.Forms.Button btnSearchTime;
-        private System.Windows.Forms.Label label1;
     }
 }
