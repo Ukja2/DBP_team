@@ -660,9 +660,23 @@ namespace DBP_team
             try
             {
                 if (_userId <= 0 || _companyId <= 0) return;
-                // 권한 캐시 갱신 및 조직도 재로딩
+
+                // 검색 모드인지 확인 (검색창에 텍스트가 있으면 검색 모드)
+                bool isSearchMode = false;
+                if (this.Controls.Find("txtSearch", true).FirstOrDefault() is TextBox txtSearch)
+                {
+                    isSearchMode = !string.IsNullOrWhiteSpace(txtSearch.Text.Trim());
+                }
+
+                // 권한 캐시 갱신
                 RefreshVisibleUsers();
-                LoadCompanyTree();
+
+                // 검색 모드가 아닐 때만 조직도 재로딩
+                if (!isSearchMode)
+                {
+                    LoadCompanyTree();
+                }
+
                 LoadFavorites();
             }
             catch { }
