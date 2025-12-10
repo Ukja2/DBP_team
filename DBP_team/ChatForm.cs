@@ -220,7 +220,7 @@ namespace DBP_team
             pnlBottom.BringToFront();
 
             // 폼 크기 변경 시 레이아웃 조정
-            this.Resize += (s, e) =>
+            this.Resize += (s, ev) =>
             {
                 AdjustLayout();
             };
