@@ -940,24 +940,31 @@ namespace DBP_team
                 var searchRootNode = new TreeNode($"'{keyword}' 검색 결과");
                 treeViewUser.Nodes.Add(searchRootNode);
 
-                // --- SQL 쿼리 수정 ---
+                // 멀티프로필 레코드가 존재하지만 빈 문자열("")인 경우를 고려하고,
+                // ID로 검색할 때는 멀티프로필 유무와 관계없이 항상 매칭되도록 쿼리 작성
                 const string sql = @"
                     SELECT u.id, u.full_name, u.email, d.name AS department_name, mpm.display_name AS mp_display
                     FROM users u
                     LEFT JOIN departments d ON u.department_id = d.id
                     LEFT JOIN multi_profile_map mpm ON mpm.owner_user_id = u.id AND mpm.target_user_id = @me
-                    WHERE (
-                        mpm.display_name IS NOT NULL
-                        AND mpm.display_name LIKE @keyword_wildcard
-                    ) OR (
-                        mpm.display_name IS NULL
-                        AND (
-                            CAST(u.id AS CHAR) LIKE @keyword_wildcard
-                            OR u.full_name LIKE @keyword_wildcard
+                    WHERE
+                        (
+                            mpm.display_name IS NOT NULL
+                            AND TRIM(mpm.display_name) <> ''
+                            AND mpm.display_name LIKE @keyword_wildcard
+                        )
+                        OR
+                        (
+                            -- 일반 필드 검색: 멀티프로필이 있어도(비어있든 아니든) id/full_name/email/부서로 검색 가능
+                            u.full_name LIKE @keyword_wildcard
                             OR u.email LIKE @keyword_wildcard
                             OR d.name LIKE @keyword_wildcard
                         )
-                    )
+                        OR
+                        (
+                            -- ID 검색은 항상 허용 (멀티프로필 레코드 존재 여부와 무관)
+                            CAST(u.id AS CHAR) LIKE @keyword_wildcard
+                        )
                     ORDER BY d.name, u.full_name;";
 
                 try
