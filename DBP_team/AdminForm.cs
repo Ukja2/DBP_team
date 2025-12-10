@@ -848,5 +848,39 @@ namespace DBP_team
         {
 
         }
+
+        // Refactoring: Extract method to load departments into Team Management tab combo
+        private void LoadDepartmentsToTeamCombo()
+        {
+            try
+            {
+                if (_cboDeptForTeam == null) return;
+                var dt = DBManager.Instance.ExecuteDataTable(
+                    "SELECT id, name FROM departments WHERE company_id=@cid ORDER BY name",
+                    new MySqlParameter("@cid", _companyId));
+                _cboDeptForTeam.DataSource = dt;
+                _cboDeptForTeam.DisplayMember = "name";
+                _cboDeptForTeam.ValueMember = "id";
+                _cboDeptForTeam.SelectedIndex = dt != null && dt.Rows.Count > 0 ? 0 : -1;
+
+                // After departments are (re)loaded, refresh teams grid for selected dept
+                try { TeamDept_SelectedIndexChanged(_cboDeptForTeam, EventArgs.Empty); } catch { }
+            }
+            catch { }
+        }
+
+        // TabControl SelectedIndexChanged: when Team tab is selected, refresh department combo
+        private void Tabs_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            try
+            {
+                if (_tabs == null || _tabs.SelectedTab == null) return;
+                if (_tabs.SelectedTab == pageTeam)
+                {
+                    LoadDepartmentsToTeamCombo();
+                }
+            }
+            catch { }
+        }
     }
 }

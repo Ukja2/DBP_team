@@ -143,6 +143,7 @@ namespace DBP_team
             this._tabs.SelectedIndex = 0;
             this._tabs.Size = new System.Drawing.Size(1024, 720);
             this._tabs.TabIndex = 0;
+            this._tabs.SelectedIndexChanged += new System.EventHandler(this.Tabs_SelectedIndexChanged);
             // 
             // pageDept
             // 
