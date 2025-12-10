@@ -556,12 +556,15 @@ namespace DBP_team
             this.lblFrom.Name = "lblFrom";
             this.lblFrom.Size = new System.Drawing.Size(43, 15);
             this.lblFrom.TabIndex = 0;
-            this.lblFrom.Text = "시작일";
+            this.lblFrom.Text = "시작일시";
             // 
             // _dtFrom
             // 
+            this._dtFrom.CustomFormat = "yyyy-MM-dd HH:mm:ss";
+            this._dtFrom.Format = System.Windows.Forms.DateTimePickerFormat.Custom;
             this._dtFrom.Location = new System.Drawing.Point(60, 8);
             this._dtFrom.Name = "_dtFrom";
+            this._dtFrom.ShowUpDown = true;
             this._dtFrom.Size = new System.Drawing.Size(140, 23);
             this._dtFrom.TabIndex = 1;
             // 
@@ -573,12 +576,15 @@ namespace DBP_team
             this.lblTo.Name = "lblTo";
             this.lblTo.Size = new System.Drawing.Size(43, 15);
             this.lblTo.TabIndex = 2;
-            this.lblTo.Text = "종료일";
+            this.lblTo.Text = "종료일시";
             // 
             // _dtTo
             // 
+            this._dtTo.CustomFormat = "yyyy-MM-dd HH:mm:ss";
+            this._dtTo.Format = System.Windows.Forms.DateTimePickerFormat.Custom;
             this._dtTo.Location = new System.Drawing.Point(260, 8);
             this._dtTo.Name = "_dtTo";
+            this._dtTo.ShowUpDown = true;
             this._dtTo.Size = new System.Drawing.Size(140, 23);
             this._dtTo.TabIndex = 3;
             // 
